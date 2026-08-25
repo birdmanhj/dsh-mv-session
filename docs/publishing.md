@@ -108,7 +108,24 @@ dsh plugin --profile web add ./dsh-mv-session-0.1.0.tgz
 3. 升级只改 package 内容：`dsh plugin add dsh-mv-session@latest` 后**重启 dsh web** 生效。
 4. 每次发布前跑第 3 节全部检查；特别是帧相关改动必须过 `--boot` 回归（真实 dsh web boot）。
 
-## 8. 常见坑
+## 8. 插件广场（社区目录）上架
+
+DSH 社区插件的发现/安装通道以 **npm + GitHub 双轨**为主，各"插件广场"从这两处索引：
+
+1. **npm 发布**（§4）是所有广场的安装源基础：`dsh plugin add dsh-mv-session`。
+2. **GitHub 仓库**：把本仓库推到 GitHub，并在仓库设置里添加 **topic：`dsh-plugin`**——
+   社区 radar/索引工具（如 [dsh-plugin-radar](https://github.com/DshMarketPlace/dsh-plugin-radar)、
+   [dsh-community-plugins](https://github.com/HubaKing/dsh-community-plugins)）按该 topic 扫描收录。
+3. **社区目录 PR**：按各目录的 contributing 指南提 PR 收录，例如
+   [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin)
+   （[贡献指南](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/contributing.md)）。
+4. 应用内商店类插件（如 [dsh-plugins-store](https://github.com/DshMarketPlace/dsh-plugins-store)）多为
+   npm/GitHub 数据的聚合展示，无需单独提交，随 1+2 自动可见。
+
+上架前建议核对：`package.json` 的 `description`/`keywords` 可读（已含 `dsh-plugin` 关键词）、
+README 自包含、LICENSE 与 CHANGELOG 随包、`repository` 字段在 GitHub 建仓后补上。
+
+## 9. 常见坑
 
 | 坑 | 处理 |
 |---|---|
@@ -117,3 +134,4 @@ dsh plugin --profile web add ./dsh-mv-session-0.1.0.tgz
 | 改了仓库脚本忘了同步 | 发布前跑 `diff`（§3 第 1 步）；`migrate_session.cjs` 是发布副本 |
 | npm name 撞名 | 换 scope：`@<you>/dsh-mv-session`，`dsh plugin add @<you>/dsh-mv-session` |
 | 卸载插件 | `dsh plugin --profile web remove dsh-mv-session`（reconcile 会同步移除 bundle 层） |
+| GitHub 建仓后 npm 页缺源码链接 | 在 `package.json` 补 `"repository": {"type":"git","url":"..."}` 后发新版本 |

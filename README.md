@@ -36,6 +36,7 @@ boot 同款断言自检（详见 internals §2.5 与 `tests/migrate_e2e_scratch.
       重启后 GUI 确认新工作区与完整历史；过渡 symlink 已删；`--verify` 校验闭环）
 - [x] 遗留清理：mv-test 测试工作区、workspace.json.pre-mvtest 备份已删除
 - [x] 文档化：`docs/user-manual.md`（使用说明书）、`docs/publishing.md`（发布指南）
+- [x] git 版本管理：初始提交 + v0.1.0 标签（.gitignore/LICENSE/CHANGELOG 就绪）
 - [x] 分发级补强：`--verify` 只读校验（替代第二次重启）、变更前预检（坏日志零改动中止）、
       from/to 同目录守卫、manual 行附闭环校验命令、工具新增 `verify` 参数、包 README 分发化
 
