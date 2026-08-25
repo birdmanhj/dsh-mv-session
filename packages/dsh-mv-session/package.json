@@ -3,6 +3,10 @@
   "description": "DeepSeek Harness (DSH) plugin: frame-safe session/workspace migration — mv_session tool plus a zero-dependency CLI (dry-run, backup, one-restart protocol, read-only verify)",
   "version": "0.1.0",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/birdmanhj/dsh-mv-session.git"
+  },
   "type": "module",
   "main": "lib/index.js",
   "keywords": [

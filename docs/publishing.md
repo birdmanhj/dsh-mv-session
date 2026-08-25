@@ -8,7 +8,7 @@
 | 形态 | 安装命令 | 适用 |
 |---|---|---|
 | npm 公开包 | `dsh plugin --profile web add dsh-mv-session` | 公开发布（推荐） |
-| GitHub | `dsh plugin --profile web add git+https://github.com/<you>/DSH-mv-session.git#v0.1.0` | 不想上 npm |
+| GitHub | `dsh plugin --profile web add git+https://github.com/birdmanhj/dsh-mv-session.git#v0.1.0` | 不想上 npm |
 | 本地路径 | `dsh plugin --profile web add /abs/path/packages/dsh-mv-session` | 本机/开发调试 |
 
 `dsh plugin add` 底层是「在 profile 目录跑 pnpm add，然后把声明了 `dsh.bundle.patch` 的依赖
@@ -84,7 +84,7 @@ git tag v0.1.0 && git push origin v0.1.0
 
 # 使用方安装（git 依赖会跑 prepare 脚本，pnpm 首次拦截需在
 # ~/.dsh/profiles/web/pnpm-workspace.yaml 的 allowBuilds 放行一次）
-dsh plugin --profile web add git+https://github.com/<you>/DSH-mv-session.git#v0.1.0
+dsh plugin --profile web add git+https://github.com/birdmanhj/dsh-mv-session.git#v0.1.0
 ```
 
 ## 6. 本地/私服
