@@ -80,9 +80,11 @@ node lib/migrate_session.js --verify --from /path/new
 ```
 
 ```text
-第 3 步：重启 dsh web —— 全程唯一必需的重启（原理见 §5.1），重启方法：
-         macOS/Linux:  kill $(lsof -tiTCP:3080) && dsh web
-         （或你用的一键启动脚本，如 dsh-web；Windows 下结束 dsh web 进程后重新运行 dsh web）
+第 3 步：重启 dsh web —— 全程唯一必需的重启（原理见 §5.1），三种方式任选：
+         ① 仓库自带一键脚本（推荐，双语提示：自动杀旧 → 启动 → 等就绪 → 开浏览器）：
+            scripts/dsh-web-restart.command（macOS 双击或 bash 执行；Linux 用 bash 执行；可带端口参数）
+         ② 手动命令：kill $(lsof -tiTCP:3080) && dsh web
+         ③ 你自己的桌面快捷方式（如 dsh-web 一键脚本）
 第 4 步：GUI 验证：
          ✅ 工作区列表只有新路径        ✅ 历史消息完整
          ✅ 会话里工具 cwd 正常          ✅ 无空会话/空工作区残留
