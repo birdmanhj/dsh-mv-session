@@ -1,72 +1,79 @@
 # dsh-mv-session
 
-DSH 会话/工作区迁移插件：把重命名/移动工作区这件"改 4 处持久化状态 + 磁盘目录"的易错事，
-变成一条 `mv_session` 工具调用 + 一次重启 + 一条校验命令。
+English | [中文](README.zh.md)
+
+[![npm](https://img.shields.io/npm/v/dsh-mv-session)](https://www.npmjs.com/package/dsh-mv-session)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+A [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) plugin that migrates
+sessions/workspaces to a new path and/or title — one tool call, one restart, one verify command.
 
 ```
-安装 → 会话里说一句"把工作区 X 迁移到 Y" → 重启 dsh web（唯一一次）→ 删 symlink → verify 校验闭环
+install → ask the agent to "migrate workspace X to Y" → restart dsh web (the only restart)
+        → delete transition symlinks → verify (read-only) → done
 ```
 
-## 为什么用它
+## Pain point
 
-目录改名后 DSH 不会自动迁移会话：旧会话绑旧路径（工具 cwd 失效）、自动生成空工作区/空会话、
-四处状态不一致。本插件一步完成（自动备份），且**帧安全**：只重写会话日志第 0 帧（header 帧），
-其余帧字节不动——不会触发 `dsh web` 的 boot 崩溃
-（"first frame is not exactly one header line"，2026-08-24 实战踩坑），遇到历史塌缩帧日志还会自动修复。
+After renaming a workspace directory, DSH does not migrate its sessions: old sessions stay bound to
+the old path (tool cwd breaks with ENOENT), DSH auto-creates an empty workspace plus empty sessions
+at the new path, and the persisted layers disagree. This plugin performs the whole migration in one
+step, with backups.
 
-## 安装
+## Frame-safe by design
+
+`session.jsonl.zstd` is a multi-frame Zstandard stream; at boot DSH asserts that **frame 0
+decompresses to exactly one header line**. A whole-log recompress collapses everything into one
+frame and crashes `dsh web` at boot (*"first frame is not exactly one header line"*). The bundled
+CLI rewrites **only frame 0**, leaves every other frame byte-identical, repairs previously collapsed
+logs, and re-verifies the boot invariant before atomically replacing the file.
+
+## Install
 
 ```bash
-dsh plugin --profile web add dsh-mv-session        # npm 发布后
-dsh plugin --profile web add /path/to/packages/dsh-mv-session   # 本地
-# 重启 dsh web 生效
+dsh plugin --profile web add dsh-mv-session
+# restart dsh web once
 ```
 
-## 使用（工具形态，推荐）
+## Usage — plugin tool (recommended)
 
-在任何 DSH 会话里直接说："把工作区 `/path/old` 迁移到 `/path/new`，标题改成 New Name"。
-Agent 会先 `dry_run` 演练给你看计划，确认后再实跑。
+In any DSH session, say: *"migrate workspace `/path/old` to `/path/new`, title New Name"*.
 
-参数：`from`/`session`（二选一）、`to`（必填）、`title`、`dry_run`、`mkdir`、`merge_dir`、
-`backup_dir`、`cleanup_empty`、`verify`（只读闭环校验，见下）。
+Parameters: `from` / `session` (one of), `to` (required), `title`, `dry_run`, `mkdir`,
+`merge_dir`, `backup_dir`, `cleanup_empty`, `verify` (read-only closing check).
 
-## 使用（CLI 形态）
+## Usage — CLI
 
 ```bash
-node migrate_session.cjs --from /old --to /new --title "New" --mkdir --dry-run  # 1 演练
-node migrate_session.cjs --from /old --to /new --title "New" --mkdir --yes      # 2 实跑（自动备份）
-# 3 重启 dsh web（全程唯一必需的重启）→ GUI 确认新工作区/历史/工具 cwd
-# 4 删除过渡 symlink（工具输出的 manual 行有具体路径）
-node migrate_session.cjs --verify --from /new          # 5 只读校验，闭环
+node migrate_session.cjs --from /old --to /new --title "New" --mkdir --dry-run  # preview
+node migrate_session.cjs --from /old --to /new --title "New" --mkdir --yes      # migrate (auto-backup)
+# restart dsh web (the only required restart) → confirm in the GUI
+# delete the transition symlinks (printed in the report)
+node migrate_session.cjs --verify --from /new          # read-only check, done
 ```
 
-## 为什么必须重启一次（且只需要一次）
+## Why exactly one restart
 
-迁移改的是磁盘，但运行中的 dsh web 持有一整套**内存态**（会话 header cwd、日志追加路径映射、
-工作区注册表），重启前不读盘刷新，还会用内存旧值写回注册表/缓存。重启后进程从磁盘重建，
-一切指向新路径。过渡 symlink 只服务于"迁移 → 重启"这段窗口；重启后删除即安全。
+The migration edits disk, but the running dsh web holds in-memory state (session header cwd, log
+append paths, workspace registry) that never re-reads disk before restart and may write stale
+values back. One restart rebuilds everything from disk. The post-symlink confirmation does not need
+a second restart — the read-only `--verify` check covers it. Zero restarts is impossible today: DSH
+has no online "rehome" API.
 
-**不需要第二次重启**：删 symlink 后的确认用 `--verify`（只读）替代——它核对注册表记录 ↔
-会话 header cwd ↔ 帧不变式 ↔ 会话目录 ↔ 缓存，`ok:true` 即闭环；出现 problem 或 GUI 异常才再重启。
-（零重启做不到：DSH 没有"在线改归属"的 API，唯一受支持的内存刷新机制就是重启。）
+## Rollback
 
-## 回滚
+Every run is backed up first (workspace.json, session logs, projection cache). Rollback = restore
+the backup directory + run the migration in reverse (new path → old path) + restart.
 
-每次实跑都先备份（workspace.json / 会话日志 / 投影缓存，目录在输出 `backup` 行）。回滚 =
-还原备份 + 反向执行一次迁移（新路径 → 旧路径）+ 重启。
+## Docs & development
 
-## 完整文档
+Full manual, publishing guide, and internals notes live in the
+[upstream repository](https://github.com/birdmanhj/dsh-mv-session): `docs/user-manual.md`,
+`docs/publishing.md`, `docs/dsh-session-migration-internals.md` (中文).
 
-完整说明书（参数表、原理、场景、FAQ、测试）：仓库 `docs/user-manual.md`。
-发布指南：`docs/publishing.md`。内部机制：`docs/dsh-session-migration-internals.md`。
+`lib/migrate_session.cjs` is synced from the repo root `lib/migrate_session.js` (this package is
+ESM while the CLI runs as a CommonJS child process).
 
-## 开发
+## License
 
-```bash
-node --check lib/migrate_session.cjs
-node tests/migrate_e2e_scratch.js --boot <真实会话日志>   # 帧不变式 + 真实 dsh web boot
-node tests/migrate_edge_cases.js                          # 合并/symlink/无zstd/--session/守卫/预检
-```
-
-> 上游仓库：DSH-mv-session。`lib/migrate_session.cjs` 由仓库根 `lib/migrate_session.js` 同步而来
-> （包是 ESM，CLI 以 `node <file>` 子进程执行，必须用 CJS 副本）。
+[MIT](LICENSE)

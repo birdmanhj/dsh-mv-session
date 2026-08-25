@@ -52,7 +52,10 @@ node tests/migrate_e2e_scratch.js --boot <真实会话日志>
 node tests/migrate_edge_cases.js
 
 # 4) 打包内容核对
-npm pack --dry-run   # 只应包含 files 清单里的 4 项
+npm pack --dry-run   # 应包含 files 清单全部条目（含 README.md / README.zh.md / README.i18n.yaml / LICENSE / CHANGELOG）
+
+# 5) 双语一致性：改动任一 README 后同步另一语言，并重录哈希
+git hash-object README.md README.zh.md   # 与 README.i18n.yaml 记录比对；不一致时更新记录
 ```
 
 ## 4. npm 发布
