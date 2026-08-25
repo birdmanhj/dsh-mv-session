@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.1 (2026-08-25)
+
+发布级文档治理与脱敏。
+
+- 移除 CLI 中硬编码的机器特定 zstd 回退路径（改为仅从 DSH_HOME 派生候选 + CLI 兜底）
+- 双语文档：新增英文使用说明书（docs/user-manual.en.md），publishing/marketplace 指南加英文导览
+- 脱敏：删除个人任务队列文档，内部机制笔记真实路径/会话 id 占位符化
+- 包 README 双语化（README.md + README.zh.md + i18n 一致性记录）
+
 ## 0.1.0 (2026-08-25)
 
 首个可发布版本。

@@ -113,7 +113,7 @@ npm 包在 `packages/dsh-mv-session/`；包内 `lib/migrate_session.cjs` 由仓�
 - [x] 真实工作区迁移实战（`--verify` 闭环）
 - [x] 分发级补强（`--verify`/预检/守卫/verify 参数/分发文档）
 - [x] git 版本管理 + GitHub 仓库（main + v0.1.0 标签，topic: `dsh-plugin`）
-- [x] npm 发布：`dsh-mv-session@0.1.0`（latest 标签，keywords 含 dsh-plugin，仓库/许可元数据齐）
+- [x] npm 发布：`dsh-mv-session@0.1.1`（latest 标签，keywords 含 dsh-plugin，仓库/许可元数据齐）
 
 ## License
 

@@ -3,4 +3,4 @@
 # authority; after editing either side, bring the other along and re-record
 # with: git hash-object README.md README.zh.md
 README.md: 485d7c9d3d9b737ea4fec901190cad678235e405
-README.zh.md: 171355477cd58cfe475f2fc553e3b0515d918f58
+README.zh.md: 9c48d0584c14cea251b52a5da2137ec9eda9c2d0
