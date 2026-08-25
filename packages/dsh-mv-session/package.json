@@ -1,0 +1,39 @@
+{
+  "name": "dsh-mv-session",
+  "description": "DeepSeek Harness (DSH) plugin: frame-safe session/workspace migration — mv_session tool plus a zero-dependency CLI (dry-run, backup, one-restart protocol, read-only verify)",
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "main": "lib/index.js",
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "dsh-plugin",
+    "plugin",
+    "workspace",
+    "session",
+    "migration",
+    "rename"
+  ],
+  "exports": {
+    ".": "./lib/index.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/migrate_session.cjs",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

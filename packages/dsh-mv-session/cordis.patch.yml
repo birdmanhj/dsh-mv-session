@@ -1,0 +1,8 @@
+# dsh-mv-session bundle patch — one host row registering the mv_session tool.
+#
+# The row loads this package's main export (a cordis plugin) into the host
+# composition. It consumes the host `shell` and `tools` services and publishes
+# nothing, so it needs no config and no isolate realm.
+- insert:
+    - id: mv-session
+      name: 'dsh-mv-session'
