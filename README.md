@@ -96,7 +96,8 @@ only supported way to refresh the in-memory layer.
 
 ## Documentation
 
-- [docs/user-manual.md](docs/user-manual.md) — full manual: principles, flows, scenarios, FAQ (中文)
+- [docs/user-manual.en.md](docs/user-manual.en.md) — full English manual: principles, flows, scenarios, FAQ
+- [docs/user-manual.md](docs/user-manual.md) — 完整中文说明书
 - [docs/publishing.md](docs/publishing.md) — npm/GitHub/marketplace publishing guide (中文)
 - [docs/dsh-session-migration-internals.md](docs/dsh-session-migration-internals.md) — DSH internals (中文)
 

@@ -1,5 +1,8 @@
 # mv-session 发布指南
 
+> *EN: How to publish `packages/dsh-mv-session/` as an installable DSH plugin — npm registry,
+> GitHub, local path, private registry, and community-marketplace listings via `dsh plugin add`.*
+>
 > 把 `packages/dsh-mv-session/` 发布为可安装的 DSH 插件（npm 公开包 / GitHub / 本地路径），
 > 供 `dsh plugin add` 安装。
 

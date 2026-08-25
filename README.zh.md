@@ -89,6 +89,7 @@ node migrate_session.cjs --verify --from /new          # 5 只读校验，闭环
 
 - [docs/user-manual.md](docs/user-manual.md) —— 完整说明书：原理（§5 为什么必须重启一次）、
   流程、场景、输出解读、FAQ、测试
+- [docs/user-manual.en.md](docs/user-manual.en.md) —— English manual (full translation)
 - [docs/publishing.md](docs/publishing.md) —— 发布指南：npm / GitHub / 本地 / 私服 / 插件广场上架
 - [docs/dsh-session-migration-internals.md](docs/dsh-session-migration-internals.md) —— DSH 内部机制笔记
 
@@ -109,7 +110,7 @@ npm 包在 `packages/dsh-mv-session/`；包内 `lib/migrate_session.cjs` 由仓�
 - [x] 动态 Cordis 插件封装（Host 工具 `mv_session`）
 - [x] 端到端测试（真实迁移 + 两次重启验证）
 - [x] 正式插件包 + `dsh plugin add` 安装 + 跨重启持久
-- [x] 排队任务 1 迁移（`DSH-wechat-article-downloader`，`--verify` 闭环）
+- [x] 真实工作区迁移实战（`--verify` 闭环）
 - [x] 分发级补强（`--verify`/预检/守卫/verify 参数/分发文档）
 - [x] git 版本管理 + GitHub 仓库（main + v0.1.0 标签，topic: `dsh-plugin`）
 - [x] npm 发布：`dsh-mv-session@0.1.0`（latest 标签，keywords 含 dsh-plugin，仓库/许可元数据齐）

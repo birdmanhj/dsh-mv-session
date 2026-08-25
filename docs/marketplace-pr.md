@@ -1,5 +1,8 @@
 # 插件广场收录 PR 指南与文案
 
+> *EN: Ready-to-submit PR copy and step-by-step guide for listing this plugin in community
+> marketplaces (format verified against awesome-dsh-plugin's contributing guide, 2026-08).*
+>
 > 面向 [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) 的收录提交流程
 > （格式以其 [contributing.md](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/contributing.md) 为准，
 > 2026-08 实测确认）。其余社区目录流程类似：都是"按各自模板新增一个条目文件 + PR"，

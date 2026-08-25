@@ -68,7 +68,7 @@ node migrate_session.cjs --verify --from /new          # 只读校验，闭环
 ## 完整文档
 
 完整说明书、发布指南、内部机制笔记在
-[上游仓库](https://github.com/birdmanhj/dsh-mv-session)：`docs/user-manual.md`、
+[上游仓库](https://github.com/birdmanhj/dsh-mv-session)：`docs/user-manual.en.md`、`docs/user-manual.md`、
 `docs/publishing.md`、`docs/dsh-session-migration-internals.md`。
 
 `lib/migrate_session.cjs` 由仓库根 `lib/migrate_session.js` 同步而来

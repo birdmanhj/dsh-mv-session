@@ -202,12 +202,11 @@ function createZstd(deps = {}) {
       scan: scanZstdFrames,
     };
   }
-  // 2. @mongodb-js/zstd from the DSH install tree / profile / DSH home
+  // 2. @mongodb-js/zstd from the profile / DSH home node_modules
   const dshHome = process.env.DSH_HOME || path.join(os.homedir(), '.dsh');
   const candidates = Array.isArray(deps.candidates) ? deps.candidates : [
     path.join(dshHome, 'profiles', 'node_modules', '@mongodb-js', 'zstd'),
     path.join(dshHome, 'node_modules', '@mongodb-js', 'zstd'),
-    '/Users/huangjian/.fnm/node-versions/v22.22.2/installation/lib/node_modules/@deepseek-ai/dsh/node_modules/@mongodb-js/zstd',
   ];
   for (const c of candidates) {
     try {

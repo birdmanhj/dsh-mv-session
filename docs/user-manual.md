@@ -1,5 +1,7 @@
 # mv-session 使用说明书
 
+[English](user-manual.en.md) | 中文
+
 > 适用范围：DSH-mv-session 项目（`lib/migrate_session.js` 核心脚本、`mv_session` 插件工具、
 > `packages/dsh-mv-session/` 正式插件包）。本文档面向最终使用者。
 >
@@ -251,5 +253,5 @@ node tests/migrate_e2e_scratch.js [真实会话日志] --boot   # 帧不变式 +
 node tests/migrate_edge_cases.js                          # 合并/symlink/无zstd/--session/--verify 边界
 ```
 
-相关文档：`docs/dsh-session-migration-internals.md`（内部机制）、`docs/queued-migrations.md`
-（排队任务）、`docs/publishing.md`（发布指南）。
+相关文档：`docs/user-manual.en.md`（English manual）、`docs/dsh-session-migration-internals.md`
+（内部机制）、`docs/publishing.md`（发布指南）。

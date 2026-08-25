@@ -68,7 +68,7 @@ the backup directory + run the migration in reverse (new path → old path) + re
 ## Docs & development
 
 Full manual, publishing guide, and internals notes live in the
-[upstream repository](https://github.com/birdmanhj/dsh-mv-session): `docs/user-manual.md`,
+[upstream repository](https://github.com/birdmanhj/dsh-mv-session): `docs/user-manual.en.md`, `docs/user-manual.md`,
 `docs/publishing.md`, `docs/dsh-session-migration-internals.md` (中文).
 
 `lib/migrate_session.cjs` is synced from the repo root `lib/migrate_session.js` (this package is
