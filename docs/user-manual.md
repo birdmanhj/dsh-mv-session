@@ -6,8 +6,9 @@
 > `packages/dsh-mv-session/` 正式插件包）。本文档面向最终使用者。
 >
 > **一句话原理（TL;DR）**：迁移改的是磁盘，但运行中的 dsh web 用的是内存（旧路径），
-> 重启前不读盘、还会把旧值写回磁盘。所以流程固定为：
-> **演练 → 实跑 → 重启一次 → 验证 → 删 symlink → `--verify` 校验闭环**。
+> 重启前不读盘、还会把旧值写回磁盘。投影缓存的"自愈"代价是**全量重放**，大会话会超时——
+> 所以它必须在 dsh 停服状态下对齐。流程固定为：
+> **演练 → 实跑 → 停服 → `--fix-projcache` → 启动 → 冷读冒烟验证 → 删 symlink → `--verify` 闭环**。
 > 看不懂原理也能照做；想懂为什么，读 §5。
 
 ## 1. 这个插件解决什么问题
@@ -63,44 +64,43 @@ dsh plugin --profile web add dsh-mv-session
 | `verify` | bool | — | 只读一致性校验（工具形态的 `--verify`）：重启 + 删 symlink 后调用，替代第二次重启 |
 
 CLI 形态对应标志：`--from/--session/--to/--title/--dry-run/--mkdir/--merge-dir/--backup-dir/
---no-cleanup-empty/--verify/--yes`。
+--no-cleanup-empty/--verify/--fix-projcache/--force/--yes`。
 
-## 4. 标准迁移流程（一次重启即可闭环）
+## 4. 标准迁移流程（一次重启 + 停服窗口对齐缓存）
 
 ```bash
 # 第 1 步：演练（不写任何东西；目标不存在时加 --mkdir 才允许规划）
 node lib/migrate_session.js --from /path/old --to /path/new --title "New Name" --mkdir --dry-run
 
-# 第 2 步：实跑（自动备份；迁移在磁盘层立即生效）
+# 第 2 步：实跑（自动备份；迁移在磁盘层立即生效；**不写 projcache**，见 §5.1）
 node lib/migrate_session.js --from /path/old --to /path/new --title "New Name" --mkdir --yes
-
-# 第 2.5 步（防写回）：实跑后立即做一次只读校验，确认注册表记录还在——
-# 运行中的旧进程可能把内存旧值写回 workspace.json（实测会发生），
-# 若报 "discover failed: no workspace record"，说明记录被写回覆盖：
-# 重新执行一次第 2 步（幂等安全：symlink 已指向目标会自动跳过重建）
-node lib/migrate_session.js --verify --from /path/new
 ```
 
 ```text
-第 3 步：重启 dsh web —— 全程唯一必需的重启（原理见 §5.1），三种方式任选：
-         ① 仓库自带一键脚本（推荐，双语提示：自动杀旧 → 启动 → 等就绪 → 开浏览器）：
-            scripts/dsh-web-restart.command（macOS 双击或 bash 执行；Linux 用 bash 执行；可带端口参数）
-         ② 手动命令：kill $(lsof -tiTCP:3080) && dsh web
-         ③ 你自己的桌面快捷方式（如 dsh-web 一键脚本）
-第 4 步：GUI 验证：
+第 3 步：停服 dsh web（全程唯一必需的重启的前半段）：
+         ① 仓库自带一键脚本可先杀旧实例：kill $(lsof -tiTCP:3080)
+         ② 或在第 4 步完成后用 scripts/dsh-web-restart.command 一键拉起
+第 4 步：停服状态下对齐投影缓存（幂等，可重复执行；活进程会覆盖此修复，所以必须停服）：
+         node lib/migrate_session.js --fix-projcache --from /path/new
+         （若误在活进程下执行会直接拒绝；确认风险可用 --force）
+第 5 步：启动 dsh web（scripts/dsh-web-restart.command，或 dsh web）
+第 6 步：GUI 验证 + 冷读冒烟（验收标准，见 §5.3）：
          ✅ 工作区列表只有新路径        ✅ 历史消息完整
          ✅ 会话里工具 cwd 正常          ✅ 无空会话/空工作区残留
-第 5 步：删除过渡 symlink（此时已安全——重启后新进程只引用新路径，见 §5.2）：
+         ✅ 打开最大的会话，确认历史加载无 "signal timed out"
+第 7 步：删除过渡 symlink（此时已安全——新进程只引用新路径，见 §5.2）：
          rm <旧工作区目录的 symlink>
          rm ~/.dsh/sessions/<旧 projectKey 的 symlink>
-第 6 步：只读校验替代第二次重启（原理见 §5.3）：
+第 8 步：只读校验闭环（原理见 §5.3）：
          node lib/migrate_session.js --verify --from /path/new
-         → ok:true 且 problems 为空 = 闭环；warnings 属正常自愈现象（见 §7）；
-         → 出现 problem 或 GUI 异常，再重启一次排查（此时重启只是排查手段，不是必需步骤）
+         → ok:true 且 problems 为空 = 闭环；projcache 不一致属 problem（见 §7）；
+         → 出现 problem 或 GUI 异常，按报错处理（通常是重跑第 4 步后复查）
 ```
 
-> 说明：早期版本的流程是"重启两次"。第二次重启本质是"删除 symlink 后确认系统无残留依赖"
-> 的验证手段，并非机制必需；现在用第 6 步的 `--verify` 只读校验替代它。
+> 说明：早期版本"重启两次"里的第二次重启只是防御性验证，已被第 8 步 `--verify` 替代；
+> 2026-08-26 事故后新增第 3-4 步：投影缓存必须在**停服窗口**内对齐（`--fix-projcache`），
+> 否则活进程 checkpoint 写回会覆盖对齐结果，重启后缓存被丢弃、大日志全量重放超时
+> （事故 DSH-MV-2026-0826-01，见 docs/incident-report-2026-08-26-projcache-timing.md）。
 
 ## 5. 原理：为什么必须重启一次（且只需要一次）
 
@@ -115,11 +115,13 @@ node lib/migrate_session.js --verify --from /path/new
 | workspace 注册表实体（记录列表） | GUI 工作区列表不变；更重要的是它的 checkpoint 会用**内存旧值写回** workspace.json / session_projcache.json，覆盖迁移刚写入的新值（本插件实战中实测遇到两次：注册表记录被覆盖丢失、缓存 cwd 回退） |
 
 重启后进程从磁盘重建：注册表由 `sessionPersistence.list()`（读各会话日志的 header）重建，
-header cwd 已指向新路径 → 工作区正确呈现、历史完整；投影缓存身份不匹配 → 自动冷重建（无损）。
+header cwd 已指向新路径 → 工作区正确呈现、历史完整；投影缓存身份不匹配 → 缓存被整条丢弃、
+**全量冷重放**（大会话可能超时，事故 DSH-MV-2026-0826-01）——所以迁移**不再写 projcache**，
+而是在停服窗口用 `--fix-projcache`（第 4 步）以 header 为权威对齐 identity(cwd+createdAt)。
 
-**结论：磁盘层立即生效（靠 symlink 支撑旧进程），完整生效必须重启一次。迁移 → 重启之间的
-窗口越短越好**（窗口越长，旧进程写回旧值的概率越高；重启前可用 `--verify` 快速确认注册表
-记录是否还在，被写回就补一次）。
+**结论：磁盘层立即生效（靠 symlink 支撑旧进程），完整生效必须重启一次，且 projcache 对齐
+必须落在停服窗口内。迁移 → 停服的窗口越短越好**（窗口越长，旧进程写回 workspace.json
+旧值的概率越高；`--verify` 会如实报告注册表与缓存不一致）。
 
 ### 5.2 过渡 symlink 的使命与生命周期
 
@@ -130,14 +132,15 @@ symlink 使命即结束**，此时删除是安全的（第 5 步）；它不能�
 
 ### 5.3 为什么第二次重启不是必需的
 
-- 第 3 步重启后，进程内存已全部是新路径：工具 cwd、append 路径、注册表记录都是新的，
+- 第 5 步启动后，进程内存已全部是新路径：工具 cwd、append 路径、注册表记录都是新的，
   没有任何东西再引用旧路径；
-- 删除 symlink（第 5 步）因此不改变任何运行中引用；
+- 删除 symlink（第 7 步）因此不改变任何运行中引用；
 - "再重启确认一次"只是防御性验证——用来抓"某个没料到的环节还依赖旧路径"。
-  现在 `--verify` 用只读方式做同样的事（见 §6）：核对注册表记录 ↔ 会话 header cwd
-  ↔ 帧不变式 ↔ 会话目录 ↔ 投影缓存，并报告 symlink 残留；
-- 所以标准协议只有**一次必需重启**；`--verify` 全绿即闭环，出现 problem 或 GUI 异常时
-  再重启排查。
+  现在 `--verify` 用只读方式做同样的事（见 §7）：核对注册表记录 ↔ 会话 header cwd
+  ↔ 帧不变式 ↔ 会话目录 ↔ **投影缓存 identity 全对齐（cwd+createdAt，不一致即 problem）**，
+  并报告 symlink 残留与最大会话的冷读冒烟要求；
+- 所以标准协议只有**一次必需重启**（停服 → 对齐 → 启动）；`--verify` 全绿即闭环，
+  出现 problem 或 GUI 异常时按报错处理（通常是停服后重跑 `--fix-projcache`）。
 
 ### 5.4 能否做到零重启
 
@@ -201,12 +204,14 @@ mv_session { from: "/path/old", to: "/path/existing", merge_dir: true }
   - `backup`：备份目录（回滚依据）；
   - `rewrite_header`：每个会话的重写结果（`frameCount` 帧数；`repaired: true` 表示该日志
     曾被旧工具塌缩、本次已修复为每行一帧）；
-  - `manual_remaining`：剩余人工步骤（重启、删 symlink）。
+  - `manual_remaining`：剩余人工步骤（**停服 → `--fix-projcache` → 启动 → 删 symlink → verify**）。
 - `--verify`（只读，替代第二次重启）：
-  - `checks`：逐项通过记录（注册表记录、每个会话的帧不变式与 header cwd）；
-  - `problems`：**必须处理**（记录缺失、header cwd 与记录不一致、帧 0 违反不变式、
-    日志损坏）——出现即建议重启/回滚排查；
-  - `warnings`：**无害自愈**（projcache cwd 陈旧 → 读取时自动冷重建；symlink 残留 → 删掉即可）。
+  - `checks`：逐项通过记录（注册表记录、每个会话的帧不变式与 header cwd、最大会话帧数）；
+  - `problems`：**必须处理**（记录缺失、header cwd 与记录不一致、帧 0 违反不变式、日志损坏、
+    **projcache identity 缺失或 cwd/createdAt 不一致**）——projcache 类问题一律
+    "停服后 `--fix-projcache`"；
+  - `warnings`：仅剩 symlink 残留等清理项；
+  - `manualChecks`：人工验收项——启动后打开最大会话确认无 `signal timed out`（冷读冒烟）。
 - 工具形态下，这些信息会被渲染成易读报告，并附上回滚提示。
 
 ## 8. 安全机制
@@ -236,13 +241,14 @@ mv_session { from: "/path/old", to: "/path/existing", merge_dir: true }
 | `no workspace record found for path ...` | from 路径没有注册表记录：先用 GUI 打开一次该工作区，或确认路径正确；也可能是旧进程写回覆盖，见下一行 |
 | `preflight failed — nothing was modified` | 实跑前预检发现坏日志：**什么都不会改动**（连备份都不写），按列出的日志用备份替换后重跑 |
 | 迁移中途失败/被打断 | 预检保证坏日志不会拖到半途；磁盘步骤若中断，用备份目录还原四件套 + 把目录移回旧路径，再重跑 |
-| 重启后工作区不见了/记录丢了 | 运行中进程写回旧注册表：重启前核对 workspace.json（第 2.5 步），必要时补记录再重启 |
+| 重启后工作区不见了/记录丢了 | 运行中进程写回旧注册表：停服后按第 4-8 步重做（含 --fix-projcache），必要时补记录再启动 |
 | 迁移后会话历史缺失 | 检查 sessions 目录是否移动完整、header cwd 是否为新路径；用备份回滚重做 |
-| `--verify` 报 projcache cwd stale | **无害自愈**：缓存身份不匹配会在读取时自动冷重建，无需处理 |
+| `--verify` 报 projcache identity 缺失/不一致 | **属 problem**（2026-08-26 事故整改后）：缓存会被整条丢弃 → 全量重放 → 大会话超时。处理：停服 dsh web → `node lib/migrate_session.js --fix-projcache --from <新路径>` → 启动 → 重跑 verify |
+| `--fix-projcache` 拒绝执行（dsh web appears to be running） | 守卫拦截：对齐必须停服，否则活进程 checkpoint 会覆盖。先停服再跑；确有把握可加 `--force` |
 | `--verify` 报 header cwd mismatch | 属 problem：header 与注册表不一致，用备份回滚重做迁移 |
 | `zstd unavailable` | 升级 Node ≥ 22.15（原生 node:zlib zstd），或安装 @mongodb-js/zstd / zstd CLI |
 | 工具执行超时 | 大日志（数百 MB）压缩较慢：把 timeoutMs 调大或直接跑 CLI |
-| 第二次重启到底要不要？ | 不需要。`--verify` 全绿即闭环；出现 problem 或 GUI 异常才再重启（见 §5.3） |
+| 第二次重启到底要不要？ | 不需要。`--verify` 全绿即闭环；出现 problem 或 GUI 异常才再排查（见 §5.3） |
 | Windows 能用吗？ | 脚本逻辑跨平台，但当前只在 macOS/Linux 实战验证过；Windows 环境建议先在一个测试工作区完整走一遍流程 |
 
 ## 11. 测试与回归
@@ -251,7 +257,10 @@ mv_session { from: "/path/old", to: "/path/existing", merge_dir: true }
 node --check lib/migrate_session.js
 node tests/migrate_e2e_scratch.js [真实会话日志] --boot   # 帧不变式 + 真实 dsh web boot 验证
 node tests/migrate_edge_cases.js                          # 合并/symlink/无zstd/--session/--verify 边界
+node tests/migrate_projcache_timing.js                    # 事故回归：活进程写回 → verify 失败 →
+                                                          # fix-projcache 对齐 → 45000 帧冷读冒烟
 ```
 
 相关文档：`docs/user-manual.en.md`（English manual）、`docs/dsh-session-migration-internals.md`
-（内部机制）、`docs/publishing.md`（发布指南）。
+（内部机制）、`docs/incident-report-2026-08-26-projcache-timing.md`（事故整改报告）、
+`docs/publishing.md`（发布指南）。

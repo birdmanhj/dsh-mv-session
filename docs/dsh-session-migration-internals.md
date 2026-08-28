@@ -136,8 +136,10 @@ encodeSegment(id) // 类似，`~` 转义为 ~007E，`..`/`.` 特殊处理
 
 - 进程内存中 `Session.header.cwd`、`sessionPaths` Map、workspace registry 实体在重启前**不会**读盘刷新。
 - 会话每轮 append 日志：路径由内存 cwd 决定 → 旧 projectKey 路径 → 经 symlink 落到新位置 ✓。
-- 投影 cache 周期性 checkpoint：会用**内存中的旧 cwd** 覆盖磁盘上已改的 cache —— 无害
-  （重启时校验不匹配则冷重建）。
+- 投影 cache 周期性 checkpoint：会用**内存中的旧 identity** 整条覆盖磁盘上已改的 cache。
+  不匹配的下场不是“无害自愈”而是整条丢弃 + 全量冷重放，大会话加载超时
+  （事故 DSH-MV-2026-0826-01）。因此迁移不再写 projcache，改为停服窗口内用 `--fix-projcache`
+  以 header 为权威对齐 identity(cwd+createdAt)，并以冷读冒烟作为验收标准。
 - workspace.json 同样会被运行中进程用内存旧值写回（实测发生）——迁移后尽快重启、
   重启前用 `--verify` 复核记录是否还在。
 - 因此：**磁盘层立即生效（靠 symlink），完整生效必须重启一次**。重启后进程只引用新路径，
@@ -152,7 +154,7 @@ encodeSegment(id) // 类似，`~` 转义为 ~007E，`..`/`.` 特殊处理
 |---|---|
 | 改坏 zstd 帧 | 变更前预检；只改第 0 帧；写盘前 boot 断言自检 + 逐帧解压验证；tmp+rename 原子替换 |
 | 进程 append 与新目录分裂 | 旧 projectKey 位置放 symlink（§4.2） |
-| projcache 被进程覆盖 | 接受覆盖；重启自动失效重建；`--verify` 报 warning 属自愈现象 |
+| projcache 被进程覆盖 | 迁移不写 projcache；停服后 `--fix-projcache` 幂等对齐（活进程下拒绝执行）；`--verify` 将不一致判为 problem |
 | workspace.json 被进程写回 | 迁移后尽快重启；重启前 `--verify` 复核，被写回则重跑迁移（幂等） |
 | from/to 指向同一目录 | 同目录守卫直接拒绝 |
 | 坏日志拖到迁移半途失败 | 变更前 preflight：任何改动前中止，连备份都不写 |

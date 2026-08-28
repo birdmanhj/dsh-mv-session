@@ -86,11 +86,13 @@ function render(args, value) {
     lines.push('  actions:');
     lines.push(summarizeActions(value));
     lines.push('');
-    lines.push('Remaining manual steps:');
-    lines.push('  1. restart dsh web (the plugin cannot restart its own host)');
-    lines.push('  2. after restart confirms normal, delete the transition symlinks listed in the manual action above');
-    lines.push('  3. close the loop with verify: mv_session { from: "' + (m.to || '') + '", verify: true }');
-    lines.push('  4. rollback data lives in the backup dir of the actions list');
+    lines.push('Remaining manual steps (REQUIRED, in order):');
+    lines.push('  1. STOP dsh web, then align the projection cache (idempotent, header-authoritative):');
+    lines.push('     node <pkg>/lib/migrate_session.cjs --fix-projcache --from "' + (m.to || '') + '"');
+    lines.push('  2. start dsh web again; open the largest session and confirm its history loads without "signal timed out"');
+    lines.push('  3. delete the transition symlinks listed in the manual action above');
+    lines.push('  4. close the loop with verify: mv_session { from: "' + (m.to || '') + '", verify: true }');
+    lines.push('  5. rollback data lives in the backup dir of the actions list');
   }
   return [{ type: 'text', text: lines.join('\n') }];
 }
@@ -98,7 +100,7 @@ function render(args, value) {
 function createTool(ctx) {
   return {
     name: 'mv_session',
-    description: 'Migrate DSH sessions/workspaces to a new path and/or title (rename a workspace). Runs the frame-safe migrate_session CLI: backs everything up, moves the directory, rewrites each session header cwd WITHOUT breaking the DSH zstd frame invariant (frame 0 stays exactly one header line; collapsed-frame logs are repaired), moves the sessions directory, updates workspace.json and session_projcache.json, cleans up auto-created empty sessions, and leaves transition symlinks. Use only when the user explicitly asked to move/rename a workspace. Real runs are destructive-but-backed-up: pass dry_run=true first to preview. The tool cannot restart dsh web itself (exactly one restart is required after migrating), so it reports the remaining manual steps; after the restart and symlink removal, call it again with verify=true as the read-only closing check.',
+    description: 'Migrate DSH sessions/workspaces to a new path and/or title (rename a workspace). Runs the frame-safe migrate_session CLI: backs everything up, moves the directory, rewrites each session header cwd WITHOUT breaking the DSH zstd frame invariant (frame 0 stays exactly one header line; collapsed-frame logs are repaired), moves the sessions directory, updates workspace.json, cleans up auto-created empty sessions, and leaves transition symlinks. The migration deliberately does NOT touch the projection cache; aligning it is a REQUIRED idempotent step done with dsh web STOPPED (node migrate_session.cjs --fix-projcache --from <new>), otherwise the live checkpoint overwrites it and large sessions time out on cold replay. Use only when the user explicitly asked to move/rename a workspace. Real runs are destructive-but-backed-up: pass dry_run=true first to preview. The tool cannot stop dsh web itself, so it reports the required manual steps; after stopping, aligning, restarting and deleting the symlinks, call it again with verify=true as the read-only closing check (stale/missing projcache identity is reported as a problem).',
     timeoutMs: 600000,
     parameters: {
       type: 'object',

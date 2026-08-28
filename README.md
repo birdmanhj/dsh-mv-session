@@ -53,9 +53,9 @@ Parameters: `from` / `session` (one of), `to` (required), `title`, `dry_run`, `m
 
 ```bash
 node migrate_session.cjs --from /old --to /new --title "New" --mkdir --dry-run  # 1 preview
-node migrate_session.cjs --from /old --to /new --title "New" --mkdir --yes      # 2 migrate (auto-backup)
-# 3 restart dsh web (the only required restart) → confirm in the GUI
-# 4 delete the transition symlinks (paths are printed in the report)
+node migrate_session.cjs --from /old --to /new --title "New" --mkdir --yes      # 2 migrate (auto-backup; no projcache writes)
+# 3 STOP dsh web → node migrate_session.cjs --fix-projcache --from /new   # align cache in the stopped window (idempotent)
+# 4 start dsh web → confirm in the GUI → open the largest session (no "signal timed out") → delete the transition symlinks
 node migrate_session.cjs --verify --from /new                                   # 5 read-only check, done
 ```
 

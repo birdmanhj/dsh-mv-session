@@ -112,8 +112,16 @@ async function caseMerge() {
   const emptyDir = path.join(home, 'sessions', mig.projectKey(newCwd), mig.encodeSegment(sidEmpty));
   check(!fs.existsSync(emptyDir), 'empty session dir removed');
   const pc = JSON.parse(fs.readFileSync(path.join(home, 'storages', 'session_projcache.json'), 'utf8'));
-  check(pc.tables.sessions[sidReal] && pc.tables.sessions[sidReal].identity.cwd === newCwd, 'projcache real cwd updated');
-  check(!pc.tables.sessions[sidEmpty], 'projcache empty entry removed');
+  check(pc.tables.sessions[sidReal] && pc.tables.sessions[sidReal].identity.cwd === oldCwd, 'projcache NOT written during migration (R2: aligned later, with dsh stopped)');
+  check(pc.tables.sessions[sidEmpty] && pc.tables.sessions[sidEmpty].identity.cwd === newCwd, 'empty-session projcache entry stays until --fix-projcache (header-authoritative cleanup)');
+  // close the loop: --fix-projcache aligns identity AND removes the orphan
+  const fixR = runCli(home, ['--fix-projcache', '--from', newCwd, '--force']);
+  check(fixR.status === 0, '--fix-projcache exit 0 after merge (stderr: ' + (fixR.stderr || '').trim().slice(0, 160) + ')');
+  const fixReport = JSON.parse(fixR.stdout);
+  check(fixReport.aligned.some((a) => a.sid === sidReal && a.cwd === newCwd), 'real session identity aligned to newCwd');
+  check(fixReport.removedOrphans.includes(sidEmpty), 'orphan empty-session entry removed by --fix-projcache');
+  const pc2 = JSON.parse(fs.readFileSync(path.join(home, 'storages', 'session_projcache.json'), 'utf8'));
+  check(pc2.tables.sessions[sidReal].identity.cwd === newCwd && !pc2.tables.sessions[sidEmpty], 'projcache aligned after --fix-projcache');
   const migratedLog = path.join(home, 'sessions', mig.projectKey(newCwd), mig.encodeSegment(sidReal), 'session.jsonl.zstd');
   const buf = fs.readFileSync(migratedLog);
   const { frames } = mig.scanZstdFrames(buf);
@@ -208,20 +216,24 @@ async function caseSessionLocate() {
   const ws = JSON.parse(fs.readFileSync(path.join(home, 'storages', 'workspace.json'), 'utf8'));
   check(ws.tables.workspaces.ws1.path === newCwd, 'record path updated');
 
-  // --verify (read-only post-migration check, replaces the second restart)
+  // --verify after migration: the migration intentionally no longer writes the
+  // projcache (live write-back would clobber it), so the stale identity must
+  // now surface as a PROBLEM until --fix-projcache runs in the stopped window.
   const v = runCli(home, ['--verify', '--from', newCwd]);
-  check(v.status === 0, '--verify exit 0 after migration (stderr: ' + (v.stderr || '').trim().slice(0, 160) + ')');
   const vReport = JSON.parse(v.stdout);
-  check(vReport.ok === true && vReport.problems.length === 0, '--verify: no problems after migration');
+  check(v.status !== 0 && vReport.ok === false && vReport.problems.some((p) => p.includes('projcache identity cwd mismatch')), '--verify: stale projcache is a PROBLEM right after migration (R1)');
   check(Array.isArray(vReport.checks) && vReport.checks.some((c) => c.check === 'session log'), '--verify: session log checked');
-  // stale projcache cwd -> warning (self-healing), not a problem
-  const pcP = path.join(home, 'storages', 'session_projcache.json');
-  const pc = JSON.parse(fs.readFileSync(pcP, 'utf8'));
-  pc.tables.sessions[sid].identity.cwd = oldCwd;
-  fs.writeFileSync(pcP, JSON.stringify(pc, null, 2) + '\n');
-  const v2 = runCli(home, ['--verify', '--from', newCwd]);
-  const v2Report = JSON.parse(v2.stdout);
-  check(v2Report.ok === true && v2Report.problems.length === 0 && v2Report.warnings.some((w) => w.includes('projcache cwd stale')), '--verify: stale projcache cwd reported as warning, still ok');
+  check(Array.isArray(vReport.manualChecks) && vReport.manualChecks.some((m) => m.includes('signal timed out')), 'verify emits the cold-read manual check (R3)');
+  // R2: --fix-projcache (idempotent; --force because the harness dsh is live)
+  const fix1 = runCli(home, ['--fix-projcache', '--from', newCwd, '--force']);
+  check(fix1.status === 0, '--fix-projcache exit 0 (stderr: ' + (fix1.stderr || '').trim().slice(0, 160) + ')');
+  const fixReport = JSON.parse(fix1.stdout);
+  check(fixReport.ok === true && fixReport.aligned.length === 1 && fixReport.aligned[0].cwd === newCwd, '--fix-projcache aligned the identity (cwd+createdAt)');
+  const fix2 = runCli(home, ['--fix-projcache', '--from', newCwd, '--force']);
+  check(fix2.status === 0, '--fix-projcache re-run exit 0 (idempotent)');
+  const v3 = runCli(home, ['--verify', '--from', newCwd]);
+  const v3Report = JSON.parse(v3.stdout);
+  check(v3.status === 0 && v3Report.ok === true && v3Report.problems.length === 0, '--verify all green after --fix-projcache');
 }
 
 async function caseGuards() {

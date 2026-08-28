@@ -5,7 +5,7 @@
 > 涉及事故:2 次生产迁移(2026-08-26)
 > 报告方:vibe-workshop 工作区管理会话(management-kb)
 > 整改归属:DSH-mv-session 维护会话
-> 状态:**待整改**(本报告只诊断,不改代码)
+> 状态:**已整改(0.1.2,2026-08-28)** —— R1-R4 全部落地,见 §6 整改记录与 CHANGELOG 0.1.2
 
 ---
 
@@ -98,3 +98,20 @@ warnings.push('projcache cwd stale for ' + s.sid + ' (' + entry.identity.cwd
 | `lib/migrate_session.js:437-441` | stale projcache 降级为 warning 的判断 |
 | `packages/dsh-mv-session/lib/migrate_session.cjs` | 上述代码的发布副本(同样需要修) |
 | `dsh-session-projection-cache`(DSH 包) | `checkpointIdentity={createdAt,cwd}`;`identityMatches` 不匹配即丢弃整条记录 |
+
+## 6. 整改记录(2026-08-28,0.1.2)
+
+- **R1** ✅ `verifyHome()`:projcache identity 缺失/不一致(cwd 或 createdAt)升级为 **problem**,
+  `ok` 要求 header 与缓存全对齐;函数注释与 FAQ 同步改写(不再宣称"harmless and self-healing")。
+- **R2** ✅ 时序强制:迁移不再写 projcache(移除 `update_projcache_cwd` 步骤及空会话清理中的
+  projcache 删除);新增幂等子命令 `--fix-projcache`(header 权威对齐 cwd+createdAt + 孤儿清理,
+  先备份),活进程检测(lsof 3080 / pgrep "dsh web")下**拒绝执行**,`--force` 例外;
+  `manual_remaining` 将"停服 → fix → 启动"列为必做步骤。协议更新:
+  **演练 → 实跑 → 停服 → `--fix-projcache` → 启动 → 冷读冒烟 → 删 symlink → verify**。
+- **R3** ✅ verify 增加可用性验收:报告最大会话(帧数)并输出 `manualChecks`——
+  "启动后打开最大会话确认无 signal timed out";header↔projcache 双查覆盖 cwd+createdAt。
+- **R4** ✅ 回归测试 `tests/migrate_projcache_timing.js`:45000 帧大日志 × (迁移 → 模拟活进程
+  写回 → verify 必失败 → `--fix-projcache` 对齐 → verify 全绿 → 全量冷读冒烟 <30s);
+  另覆盖活进程守卫拒绝、幂等重跑;`migrate_edge_cases.js`/`migrate_e2e_scratch.js` 断言同步更新。
+- **验收标准**(§4)逐项达成:停服窗口内可保证全对齐、verify 对 stale 报 problem 且 ok=false、
+  冷读冒烟无超时、事故场景"修复前失败/修复后通过"可复现。

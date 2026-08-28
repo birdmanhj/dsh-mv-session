@@ -228,8 +228,16 @@ async function main() {
   check(wsAfter.global.workspaceIds.length === 2, 'workspace.json: workspaceIds consistent');
 
   const pcAfter = JSON.parse(fs.readFileSync(path.join(home, 'storages', 'session_projcache.json'), 'utf8'));
-  check(pcAfter.tables.sessions[sidA].identity.cwd === newA, 'projcache A identity.cwd == newA');
-  check(pcAfter.tables.sessions[sidB].identity.cwd === newB, 'projcache B identity.cwd == newB');
+  check(pcAfter.tables.sessions[sidA].identity.cwd === oldA, 'projcache NOT written during migration (R2)');
+  check(pcAfter.tables.sessions[sidB].identity.cwd === oldB, 'projcache NOT written during migration (R2)');
+  // close the loop per the R2 protocol: --fix-projcache (--force: harness dsh is live)
+  for (const [w, sid] of [[newA, sidA], [newB, sidB]]) {
+    const fx = spawnSync(process.execPath, [SCRIPT, '--dsh-home', home, '--fix-projcache', '--from', w, '--force'], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+    if (fx.status !== 0) fail('--fix-projcache failed for ' + w + ': ' + (fx.stderr || '').trim().slice(0, 160));
+  }
+  const pcFixed = JSON.parse(fs.readFileSync(path.join(home, 'storages', 'session_projcache.json'), 'utf8'));
+  check(pcFixed.tables.sessions[sidA].identity.cwd === newA, 'projcache A identity aligned after --fix-projcache');
+  check(pcFixed.tables.sessions[sidB].identity.cwd === newB, 'projcache B identity aligned after --fix-projcache');
 
   check(fs.existsSync(path.join(newA, 'marker.txt')), 'disk dir moved: newA/marker.txt exists');
   check(fs.existsSync(path.join(newB, 'marker.txt')), 'disk dir moved: newB/marker.txt exists');

@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.2 (2026-08-28)
+
+事故 DSH-MV-2026-0826-01 整改（R1-R4）：迁移后 projcache 被活进程写回覆盖，
+重启后缓存整条丢弃、大日志全量重放超时（signal timed out）。
+
+- R1：`--verify` 将 projcache identity 缺失/不一致（cwd 或 createdAt）从 warning 升级为 problem，ok 必须全对齐
+- R2：迁移不再写 projcache；新增幂等子命令 `--fix-projcache`（header 权威对齐 cwd+createdAt + 孤儿清理，
+  活进程守卫，停服窗口内执行；`--force` 可覆盖）
+- R3：verify 报告最大会话并输出冷读冒烟人工验收项（打开后确认无 "signal timed out"）
+- R4：新增回归测试 tests/migrate_projcache_timing.js（模拟活进程写回 → verify 失败 →
+  fix 对齐 → 45000 帧冷读冒烟；含活进程拒绝守卫）
+- 协议更新：演练 → 实跑 → 停服 → --fix-projcache → 启动 → 冷读冒烟 → 删 symlink → verify
+
 ## 0.1.1 (2026-08-25)
 
 发布级文档治理与脱敏。

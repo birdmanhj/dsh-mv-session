@@ -6,9 +6,11 @@ English | [中文](user-manual.md)
 > plugin tool, and the `packages/dsh-mv-session/` npm package). This document is for end users.
 >
 > **TL;DR**: the migration edits disk, but the running dsh web keeps using memory (the old path)
-> and writes stale values back to disk. The fixed protocol is:
-> **preview → migrate → restart once → verify in the GUI → delete symlinks → `--verify` check → done**.
-> You can follow it without understanding the internals; §5 explains the why.
+> and writes stale values back to disk. The projection cache's "self-heal" is a full cold replay,
+> which times out on large sessions — so it must be aligned with dsh STOPPED. The fixed protocol:
+> **preview → migrate → stop dsh → `--fix-projcache` → start dsh → cold-read smoke → delete
+> symlinks → `--verify` check → done**. You can follow it without understanding the internals;
+> §5 explains the why.
 
 ## 1. What problem this solves
 
@@ -66,48 +68,45 @@ Success marker: `dsh.profile.bundles` in `~/.dsh/profiles/web/package.json` cont
 | `verify` | bool | — | Read-only consistency check (the tool form of `--verify`): run after restart + symlink removal; replaces the second restart |
 
 CLI flags: `--from/--session/--to/--title/--dry-run/--mkdir/--merge-dir/--backup-dir/
---no-cleanup-empty/--verify/--yes`.
+--no-cleanup-empty/--verify/--fix-projcache/--force/--yes`.
 
-## 4. Standard migration flow (one restart closes the loop)
+## 4. Standard migration flow (one restart + a stopped-window cache alignment)
 
 ```bash
 # Step 1: preview (writes nothing; --mkdir is needed to plan a missing target)
 node lib/migrate_session.js --from /path/old --to /path/new --title "New Name" --mkdir --dry-run
 
-# Step 2: migrate (auto-backup; takes effect on disk immediately)
+# Step 2: migrate (auto-backup; takes effect on disk immediately;
+#         deliberately does NOT write the projection cache — see §5.1)
 node lib/migrate_session.js --from /path/old --to /path/new --title "New Name" --mkdir --yes
-
-# Step 2.5 (anti-write-back): immediately verify that the registry record survived —
-# the old running process may write its stale in-memory registry back to workspace.json
-# (observed in practice). If it reports "discover failed: no workspace record",
-# re-run step 2 (idempotent: an existing transition symlink is reused, not rebuilt).
-node lib/migrate_session.js --verify --from /path/new
 ```
 
 ```text
-Step 3: restart dsh web — the only required restart (see §5.1). Three options:
-        ① the bundled one-click script (recommended, bilingual output: kill old instance
-           → start → wait for readiness → open browser):
-           scripts/dsh-web-restart.command (macOS: double-click or bash; Linux: bash; optional port argument)
-        ② manual command: kill $(lsof -tiTCP:3080) && dsh web
-        ③ your own desktop shortcut (e.g. a dsh-web launcher)
-Step 4: verify in the GUI:
+Step 3: STOP dsh web (first half of the only required restart):
+        kill $(lsof -tiTCP:3080)   # or let the bundled script do the kill+start around step 4
+Step 4: align the projection cache while dsh is STOPPED (idempotent, header-authoritative;
+        refused while dsh is live unless --force):
+        node lib/migrate_session.js --fix-projcache --from /path/new
+Step 5: start dsh web (scripts/dsh-web-restart.command, or: dsh web)
+Step 6: verify in the GUI + cold-read smoke (acceptance, see §5.3):
         ✅ workspace list shows only the new path   ✅ full message history
         ✅ tool cwd works in sessions                ✅ no empty sessions/workspaces left
-Step 5: delete the transition symlinks (safe now — the restarted process only references
+        ✅ open the LARGEST session and confirm its history loads without "signal timed out"
+Step 7: delete the transition symlinks (safe now — the restarted process only references
         the new path, see §5.2):
         rm <old workspace directory symlink>
         rm ~/.dsh/sessions/<old projectKey symlink>
-Step 6: read-only check instead of a second restart (see §5.3):
+Step 8: read-only closing check (see §5.3):
         node lib/migrate_session.js --verify --from /path/new
-        → ok:true with no problems = loop closed; warnings are normal self-healing notices (§7);
-        → problems or GUI anomalies → restart once more to investigate (that restart is a
-          diagnostic aid, not a required step)
+        → ok:true with no problems = loop closed; a stale/missing projcache identity is a PROBLEM (§7);
+        → problems or GUI anomalies → act on the report (usually: stop dsh, re-run step 4, re-check)
 ```
 
-> Note: the early protocol required two restarts. The second one was only a defensive check
-> ("nothing still depends on the old path after the symlinks are gone"), not a mechanical
-> requirement — step 6's read-only `--verify` replaces it.
+> Note: the early protocol required two restarts — the second one was only a defensive check,
+> replaced by step 8's read-only `--verify`. After incident DSH-MV-2026-0826-01, steps 3-4 were
+> added: the projection cache must be aligned inside the stopped window, otherwise the live
+> process's checkpoint write-back overwrites the fix and large sessions time out on cold replay
+> (see docs/incident-report-2026-08-26-projcache-timing.md).
 
 ## 5. Principles: why exactly one restart (and not two, not zero)
 
@@ -124,13 +123,15 @@ that never re-reads disk before a restart:
 
 After a restart the process rebuilds from disk: the registry is rebuilt from
 `sessionPersistence.list()` (reading each session log's header), whose cwd now points at the new
-path → the workspace appears correctly with full history; projection-cache identity mismatches
-cold-rebuild automatically (lossless).
+path → the workspace appears correctly with full history; a projection-cache identity mismatch is
+**not** "lossless self-heal" — it drops the whole cache entry and cold-replays the log, which
+times out on large sessions (incident DSH-MV-2026-0826-01). That is why the migration no longer
+writes the projcache at all and `--fix-projcache` aligns it header-authoritatively with dsh stopped.
 
-**Conclusion: disk changes take effect immediately (via the symlinks), but full effect requires
-exactly one restart. Keep the migrate → restart window as short as possible** (the longer the
-window, the higher the chance the old process writes stale values back; `--verify` right after
-migrating tells you whether the registry record survived, and re-running the migration repairs it).
+**Conclusion: disk changes take effect immediately (via the symlinks), full effect requires
+exactly one restart, and the projcache alignment must happen inside the stopped window. Keep the
+migrate → stop window as short as possible** (the longer the window, the higher the chance the
+old process writes stale values back; `--verify` reports registry and cache inconsistencies).
 
 ### 5.2 The transition symlinks: purpose and lifetime
 
@@ -218,13 +219,17 @@ is missed), moves the real directory, and replaces the old symlink with the new 
   - `backup`: backup directory (the rollback basis);
   - `rewrite_header`: per-session rewrite results (`frameCount` frames; `repaired: true` means the
     log had been collapsed by an older tool and was rebuilt one frame per line);
-  - `manual_remaining`: the remaining manual steps (restart, delete symlinks).
+  - `manual_remaining`: the required manual steps (**stop dsh → `--fix-projcache` → start dsh →
+    delete symlinks → verify**).
 - `--verify` (read-only, replaces the second restart):
-  - `checks`: per-item passes (registry record, each session's frame invariant and header cwd);
+  - `checks`: per-item passes (registry record, each session's frame invariant and header cwd,
+    the largest session's frame count);
   - `problems`: **must handle** (missing record, header cwd ≠ record path, frame-0 invariant
-    violated, corrupt log) — investigate/roll back and restart if any appear;
-  - `warnings`: **harmless and self-healing** (stale projcache cwd → auto cold-rebuild on read;
-    leftover symlinks → just delete them).
+    violated, corrupt log, and **missing or mismatched projcache identity (cwd or createdAt)**) —
+    projcache problems are fixed with "stop dsh → `--fix-projcache`";
+  - `warnings`: cleanup items only (leftover transition symlinks);
+  - `manualChecks`: acceptance items — open the largest session after startup and confirm no
+    `signal timed out` (cold-read smoke).
 - In tool form, all of the above is rendered as a readable report with rollback hints.
 
 ## 8. Safety mechanisms
@@ -261,7 +266,8 @@ is missed), moves the real directory, and replaces the old symlink with the new 
 | Migration failed or was interrupted midway | Preflight keeps bad logs from failing midway; if a disk step was interrupted, restore the four layers from the backup directory, move the directory back, and re-run |
 | Workspace missing / record lost after restart | The old process wrote its registry back: check workspace.json before restarting (step 2.5) and re-apply if needed |
 | Session history missing after migration | Check whether the sessions directory moved completely and header cwd is the new path; roll back from the backup and redo |
-| `--verify` reports projcache cwd stale | **Harmless, self-healing**: the cache identity mismatch cold-rebuilds on read; no action needed |
+| `--verify` reports a missing/mismatched projcache identity | **This is a PROBLEM** (post-incident fix): the cache is dropped and the log cold-replays, timing out on large sessions. Stop dsh web → `node lib/migrate_session.js --fix-projcache --from <new>` → start dsh → re-run verify |
+| `--fix-projcache` refuses to run (dsh web appears to be running) | The guard: alignment must happen with dsh stopped, or the live checkpoint overwrites it. Stop dsh first, or pass `--force` knowingly |
 | `--verify` reports header cwd mismatch | This is a problem: header and registry disagree — roll back from the backup and redo the migration |
 | `zstd unavailable` | Use Node ≥ 22.15 (native node:zlib zstd), or install @mongodb-js/zstd / the zstd CLI |
 | Tool execution timed out | Very large logs (hundreds of MB) compress slowly: raise timeoutMs or run the CLI directly |
@@ -274,7 +280,11 @@ is missed), moves the real directory, and replaces the old symlink with the new 
 node --check lib/migrate_session.js
 node tests/migrate_e2e_scratch.js [real-session-log] --boot   # frame invariant + real dsh web boot
 node tests/migrate_edge_cases.js                              # merge/symlink/no-zstd/--session/--verify edges
+node tests/migrate_projcache_timing.js                        # incident regression: live write-back ->
+                                                              # verify fails -> fix-projcache aligns ->
+                                                              # 45000-frame cold-read smoke
 ```
 
 Related docs: `docs/user-manual.md`（中文版）、`docs/dsh-session-migration-internals.md`
-(internals), `docs/publishing.md` (publishing guide).
+(internals), `docs/incident-report-2026-08-26-projcache-timing.md` (incident report),
+`docs/publishing.md` (publishing guide).

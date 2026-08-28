@@ -48,9 +48,9 @@ Agent 会先 `dry_run` 演练给你看计划，确认后再实跑；收尾用 `v
 
 ```bash
 node migrate_session.cjs --from /old --to /new --title "New" --mkdir --dry-run  # 1 演练
-node migrate_session.cjs --from /old --to /new --title "New" --mkdir --yes      # 2 实跑（自动备份）
-# 3 重启 dsh web（全程唯一必需的重启）→ GUI 确认新工作区/历史/工具 cwd
-# 4 删除过渡 symlink（报告 manual 行有具体路径）
+node migrate_session.cjs --from /old --to /new --title "New" --mkdir --yes      # 2 实跑（自动备份；不写 projcache）
+# 3 停服 dsh web → node migrate_session.cjs --fix-projcache --from /new   # 停服窗口对齐缓存（幂等）
+# 4 启动 dsh web → GUI 确认 → 打开最大会话确认无 "signal timed out" → 删除过渡 symlink
 node migrate_session.cjs --verify --from /new          # 5 只读校验，闭环
 ```
 
@@ -111,6 +111,8 @@ npm 包在 `packages/dsh-mv-session/`；包内 `lib/migrate_session.cjs` 由仓�
 - [x] 端到端测试（真实迁移 + 两次重启验证）
 - [x] 正式插件包 + `dsh plugin add` 安装 + 跨重启持久
 - [x] 真实工作区迁移实战（`--verify` 闭环）
+- [x] 事故整改 R1-R4（DSH-MV-2026-0826-01）：verify 升级 projcache→problem、
+      `--fix-projcache` 停服幂等对齐、冷读冒烟 + 时序回归测试
 - [x] 分发级补强（`--verify`/预检/守卫/verify 参数/分发文档）
 - [x] git 版本管理 + GitHub 仓库（main + v0.1.0 标签，topic: `dsh-plugin`）
 - [x] npm 发布：`dsh-mv-session@0.1.1`（latest 标签，keywords 含 dsh-plugin，仓库/许可元数据齐）
