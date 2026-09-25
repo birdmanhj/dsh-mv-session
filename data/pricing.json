@@ -1,0 +1,35 @@
+{
+  "currency": "CNY",
+  "unit": "per_million_tokens",
+  "source": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing",
+  "fetchedAt": "2026-09-20",
+  "_comment": "单价表是『可查的口径』（SPEC §10 原则 4）。官方调价只改本文件并升 version，历史版本快照继续沿用其冻结的 pricingVersion，禁止回改历史成本分。",
+  "version": "2026-09",
+  "models": {
+    "deepseek-flash": {
+      "input": 2.0,
+      "cacheRead": 0.04,
+      "output": 8.0,
+      "offPeakInput": 1.0,
+      "offPeakCacheRead": 0.02,
+      "offPeakOutput": 4.0,
+      "note": "旧模型名 deepseek-v4-flash / deepseek-v4-flash-vision-exp 已下线，仍按本价计费"
+    },
+    "deepseek-v4-pro": {
+      "input": 9.0,
+      "cacheRead": 0.30,
+      "output": 27.0,
+      "offPeakInput": 4.5,
+      "offPeakCacheRead": 0.15,
+      "offPeakOutput": 13.5
+    }
+  },
+  "peakWindows": [
+    { "days": "Mon-Fri", "from": "09:00", "to": "12:00" },
+    { "days": "Mon-Fri", "from": "14:00", "to": "18:00" }
+  ],
+  "peakTimezone": "Asia/Shanghai",
+  "peakNote": "北京时间周一至周五（不含中国法定节假日）9:00-12:00、14:00-18:00 为高峰时段；其余（含周末与法定节假日）为空闲时段。空闲单价 = 高峰单价的一半。",
+  "holidays": [],
+  "holidayNote": "法定节假日按空闲时段计费；此数组需人工维护（未维护时周末已自动按空闲处理，工作日节假日会偏高估，方向偏保守）"
+}

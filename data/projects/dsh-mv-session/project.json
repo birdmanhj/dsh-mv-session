@@ -1,0 +1,66 @@
+{
+  "id": "dsh-mv-session",
+  "name": "DSH-mv-session",
+  "_comment": "由 cmd.mjs serve 从「加入新工程」页登记。goal / checkpoints / constraints 需要人工补全 —— 登记只建立档案，不代替委托方陈述目标（SPEC §12）。",
+  "goal": {
+    "text": "（待补：委托方对这一工程的目标陈述）",
+    "baseline": "（待补）"
+  },
+  "checkpoints": [
+    {
+      "id": "schedule",
+      "zh": "工期",
+      "text": "（待补阈值）",
+      "threshold": {
+        "maxMinutes": 120
+      },
+      "判据来源": "会话日志 API 请求间隔分解",
+      "basis": "active-minutes"
+    },
+    {
+      "id": "budget",
+      "zh": "预算",
+      "text": "（待补阈值）",
+      "threshold": {
+        "maxCost": 50,
+        "currency": "CNY"
+      },
+      "判据来源": "会话 usage × data/pricing.json"
+    },
+    {
+      "id": "scope",
+      "zh": "范围",
+      "text": "（待补阈值）",
+      "threshold": {
+        "minModules": 1,
+        "minTestFiles": 1
+      },
+      "判据来源": "产出物清单（文件系统取证）"
+    }
+  ],
+  "constraints": [],
+  "tolerance": {
+    "riskExposure": 0.25,
+    "drift": 0.4
+  },
+  "sut": {
+    "ref": "dir:.",
+    "ver": "01.00.00.00",
+    "repo": ".",
+    "kind": "directory",
+    "note": "CodeV：被测体 = 本工作区目录（记录随项目走）"
+  },
+  "testset": {
+    "ref": "testset:dsh-mv-session-v1",
+    "ver": "00.01.00.00",
+    "repo": "../DSH-mv-session",
+    "kind": "conformance",
+    "content": "testset.json"
+  },
+  "versionScheme": {
+    "codev": "CodeV 大.中.小.修订",
+    "testv": "TestV 大.中.小.修订",
+    "supv": "SupV 大.中.小.修订",
+    "_semantics": "四段中哪一段进位 = 本次变更的层级：L4→第1段、L3→第2段、L2→第3段、L1→第4段；进位后右侧清零。"
+  }
+}

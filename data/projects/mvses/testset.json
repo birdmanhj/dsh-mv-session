@@ -1,0 +1,27 @@
+{
+  "_comment": "测试集内容清单（SPEC §4.5）：TestV 只有版本号不足以判定变更，必须落到子集编号 + 本原编号。",
+  "testv": "00.01.00.00",
+  "name": "dsh-mv-session 验收测试集",
+  "label": "初始",
+  "labelEn": "initial",
+  "subsets": [
+    {
+      "id": "L2set#accept",
+      "name": "验收用例子集",
+      "covers": [
+        "quality"
+      ],
+      "anchors": {
+        "layer": "L2set",
+        "locked": "抽样边界"
+      },
+      "items": [
+        {
+          "id": "#001",
+          "text": "（待补：一条可机械判定的验收用例）",
+          "expect": "（待补）"
+        }
+      ]
+    }
+  ]
+}

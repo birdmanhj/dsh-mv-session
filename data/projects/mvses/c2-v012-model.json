@@ -1,0 +1,47 @@
+{
+  "change": {
+    "Lmodel": 2,
+    "Lset": null,
+    "anchor": {
+      "layer": "L1",
+      "frozenAt": "V1",
+      "source": "data/projects/mvses/versions/V1.json"
+    },
+    "checkpointsTouched": [
+      "redline-frame"
+    ],
+    "requestedBy": "owner",
+    "confirmed": true
+  },
+  "frozenPair": {
+    "sut": {
+      "ref": "git:v0.1.2"
+    },
+    "test": {
+      "ref": "testset:mvses-v1"
+    }
+  },
+  "note": "v0.1.2（模型侧）：事故 DSH-MV-2026-0826-01 整改 R1-R3——projcache 不再由迁移写入、--fix-projcache 停服幂等子命令、verify 升级 problem",
+  "dimensions": {
+    "quality": {
+      "base": 92,
+      "basis": "structured"
+    },
+    "cost": {
+      "base": 90,
+      "basis": "structured"
+    },
+    "constraint": {
+      "base": 100,
+      "basis": "structured"
+    },
+    "goal": {
+      "base": 100,
+      "basis": "structured"
+    },
+    "risk": {
+      "base": 78,
+      "basis": "structured"
+    }
+  }
+}

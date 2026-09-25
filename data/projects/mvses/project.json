@@ -1,0 +1,88 @@
+{
+  "id": "mvses",
+  "name": "dsh-mv-session",
+  "goal": {
+    "text": "把 DSH 会话/工作区迁移（改名/改路径）做成可分发插件：帧安全重写会话日志、迁移全流程自动化（备份/校验/闭环协议）、发布 npm + GitHub 并可通过 dsh plugin add 安装。",
+    "baseline": "README.md（痛点→帧安全→一次重启协议→参数表），v0.1.0 起为对外基线"
+  },
+  "checkpoints": [
+    {
+      "id": "schedule",
+      "zh": "工期",
+      "text": "无外部截止日期（内部连续交付，2026-08-24 立项 → 08-25 首版 → 08-28 事故整改）",
+      "threshold": {},
+      "判据来源": "git 提交时间线（spanDays=3, commits=11）",
+      "basis": "active-minutes",
+      "_gap": "无工期上限 ⇒ 进度维按满分占位（缺口已声明）"
+    },
+    {
+      "id": "budget",
+      "zh": "预算",
+      "text": "无预算上限（个人项目，模型用量未设 cap）",
+      "threshold": {
+        "currency": "CNY"
+      },
+      "判据来源": "无会话级 usage 采集",
+      "basis": "usage",
+      "_gap": "无预算上限 ⇒ 成本维按满分占位（缺口已声明）"
+    },
+    {
+      "id": "scope",
+      "zh": "范围",
+      "text": "核心脚本 1 + 插件包 1 + 回归测试 3 套 + 双语文档；npm/GitHub 双发布",
+      "threshold": {
+        "minModules": 1,
+        "minTestFiles": 3
+      },
+      "判据来源": "产出物清单（文件系统取证）",
+      "basis": "artifact"
+    }
+  ],
+  "constraints": [
+    {
+      "id": "redline-frame",
+      "zh": "红线：不得破坏 DSH zstd 帧不变式",
+      "text": "任何版本下 dsh web 必须能启动并读回被迁移的会话（第 0 帧恰一行 header）",
+      "level": "red",
+      "判据": "tests/migrate_e2e_scratch.js --boot 真实 dsh web boot + 帧自检"
+    },
+    {
+      "id": "kpi-protocol",
+      "zh": "考核点：迁移协议可执行",
+      "text": "演练→实跑→停服→fix-projcache→启动→冒烟→删symlink→verify 闭环，步骤有文档",
+      "level": "kpi",
+      "判据": "docs/user-manual*.md §4 + manual_remaining 输出"
+    },
+    {
+      "id": "kpi-release",
+      "zh": "考核点：双轨发布",
+      "text": "npm 包可 dsh plugin add 安装；GitHub 仓库含 topic dsh-plugin",
+      "level": "kpi",
+      "判据": "npm view dsh-mv-session；github.com/birdmanhj/dsh-mv-session"
+    }
+  ],
+  "tolerance": {
+    "riskExposure": 0.25,
+    "drift": 0.4
+  },
+  "sut": {
+    "ref": "dir:.",
+    "ver": "01.00.00.00",
+    "repo": ".",
+    "kind": "directory",
+    "note": "CodeV：被测体 = 登记时指定的目录"
+  },
+  "testset": {
+    "ref": "testset:mvses-v1",
+    "ver": "00.01.00.00",
+    "repo": ".",
+    "kind": "conformance",
+    "content": "testset.json"
+  },
+  "versionScheme": {
+    "codev": "CodeV 大.中.小.修订",
+    "testv": "TestV 大.中.小.修订",
+    "supv": "SupV 大.中.小.修订",
+    "_semantics": "四段中哪一段进位 = 本次变更的层级：L4→第1段、L3→第2段、L2→第3段、L1→第4段；进位后右侧清零。"
+  }
+}

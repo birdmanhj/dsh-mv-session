@@ -1,0 +1,2162 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="sup-src-hash" content="8f32d6c412d3017d">
+<title>通用项目监理 · 仪表台 / Project Supervisor Dashboard</title>
+<style>
+  :root{
+    --bg:#f7f7f8; --card:#fff; --line:#e4e4e7; --ink:#18181b; --muted:#71717a;
+    --l4:#c62828; --l3:#ea580c; --l2:#ca8a04; --l1:#1d4ed8;
+    --ok:#15803d; --warn:#ca8a04; --bad:#c62828;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:14px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+  header{background:#fff;border-bottom:1px solid var(--line);padding:16px 22px;
+         display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;position:sticky;top:0;z-index:10}
+  header h1{font-size:17px;margin:0;font-weight:650}
+  header .sub{color:var(--muted);font-size:12px}
+  .grow{flex:1}
+  button.lang{border:1px solid var(--line);background:#fff;border-radius:7px;padding:5px 11px;
+              cursor:pointer;font-size:12px;color:var(--ink)}
+  button.lang:hover{background:#f4f4f5}
+  main{padding:18px 22px 60px;max-width:1280px;margin:0 auto}
+  section{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:15px 17px;margin-bottom:15px}
+  section h2{font-size:14px;margin:0 0 12px;font-weight:650;display:flex;align-items:center;gap:8px}
+  section h2 .tag{font-size:11px;color:var(--muted);font-weight:400}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:6px 9px;border-bottom:1px solid #f1f1f3;vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  code{background:#f4f4f5;padding:1px 5px;border-radius:4px;font-size:12px}
+  .pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11px;color:#fff;white-space:nowrap}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  .tree{list-style:none;margin:0;padding-left:0}
+  .tree ul{list-style:none;margin:0;padding-left:20px;border-left:1px dashed var(--line)}
+  .tree li{padding:5px 0 5px 6px;position:relative}
+  .node{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .fitnum{font-variant-numeric:tabular-nums;font-weight:650;font-size:15px}
+  .muted{color:var(--muted)}
+  .small{font-size:12px}
+  .bar{height:7px;border-radius:4px;background:#f1f1f3;overflow:hidden;min-width:58px}
+  .bar>i{display:block;height:100%}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:11px}
+  .kpi{border:1px solid var(--line);border-radius:9px;padding:11px 13px}
+  .kpi .k{color:var(--muted);font-size:11px}
+  .kpi .v{font-size:20px;font-weight:650;font-variant-numeric:tabular-nums;margin-top:2px}
+  .stop{border-left:3px solid var(--l2);padding:7px 11px;background:#fffbeb;border-radius:0 7px 7px 0;margin-bottom:7px}
+  .gap{border-left:3px solid var(--muted);padding:5px 10px;background:#fafafa;border-radius:0 6px 6px 0;
+       margin-bottom:5px;font-size:12.5px;color:#3f3f46}
+  .empty{color:var(--muted);font-size:13px;padding:6px 0}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+  .flex{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  select{border:1px solid var(--line);border-radius:7px;padding:4px 8px;background:#fff;font-size:12px}
+  /* 宽表格（六维 × 多版本、版本矩阵）会横向出界。
+     出界的后果是整页被撑宽、右侧列看不到 —— 给容器加横向滚动条，
+     溢出只发生在容器内部。表头 sticky 让滚动时仍能对上列。 */
+  .scrollx{overflow-x:auto;overflow-y:hidden;padding-bottom:4px;max-width:100%}
+  .scrollx table{min-width:100%}
+  .scrollx::-webkit-scrollbar{height:9px}
+  .scrollx::-webkit-scrollbar-thumb{background:#c4c4c8;border-radius:5px}
+  .scrollx::-webkit-scrollbar-track{background:#f1f1f3;border-radius:5px}
+  /* ── 项目标签页 ── */
+  .tabs{display:flex;gap:2px;align-items:flex-end;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:14px}
+  .tab{display:flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid var(--line);border-bottom:none;
+       border-radius:8px 8px 0 0;background:#f7f7f8;cursor:pointer;font-size:12.5px;max-width:260px;
+       position:relative;top:1px;user-select:none}
+  .tab:hover{background:#efeff1}
+  .tab.on{background:#fff;font-weight:600;box-shadow:0 -2px 0 0 var(--l2) inset}
+  .tab .tabn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tab .tabx{color:#a1a1aa;font-size:14px;line-height:1;padding:0 1px;border-radius:4px}
+  .tab .tabx:hover{color:#fff;background:#c62828}
+  /* 「+」与项目标签【同高】：此前单独给了 font-size:16px 与更小的 padding，
+     结果它比旁边的标签高一截（用户指出的第①点）。这里只调字重与最小宽度。 */
+  .tab.add{font-weight:700;color:#52525b;padding:7px 13px;min-width:0;justify-content:center}
+  .tab.add .tabn{overflow:visible}
+  .tab.add:hover{color:#fff;background:#52525b}
+  .tab.add.on{color:#18181b;background:#fff}
+  .addbox{border:1px solid var(--line);border-radius:9px;padding:13px 15px;background:#fcfcfd}
+  .btn.big{font-size:14px;padding:10px 18px;border-radius:8px}
+  /* 一键纳管的进度列表：使用者要的"等待提示/进度反馈"就长在这里 */
+  .flow{margin-top:12px}
+  .fstep{display:flex;gap:8px;align-items:baseline;padding:5px 0;border-bottom:1px dashed #eee;font-size:12.5px}
+  .fstep:last-child{border-bottom:none}
+  .fstep.ok{color:#15803d}
+  .fstep.err{color:#b45309}
+  .fstep.run{color:#52525b}
+  .runlog{max-height:220px;overflow:auto;background:#18181b;color:#e4e4e7;border-radius:6px;padding:8px 10px;
+          font-size:11px;line-height:1.45;margin:4px 0 6px;white-space:pre-wrap}
+  .addbox .ph{font-weight:650;font-size:12.5px;margin-bottom:5px}
+  .btn{border:1px solid #d4d4d8;background:#fff;border-radius:7px;padding:6px 13px;font-size:12.5px;cursor:pointer}
+  .btn:hover{background:#f4f4f5}
+  .btn.primary{background:#18181b;color:#fff;border-color:#18181b}
+  .btn.primary:hover{background:#3f3f46}
+  .pathin{width:100%;max-width:520px;border:1px solid var(--line);border-radius:7px;padding:6px 9px;
+          font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;margin-top:3px}
+  .scanout{margin-top:10px}
+  .scanrep{border:1px solid var(--line);border-radius:8px;padding:11px 13px;background:#fff;margin-top:8px}
+  .scanrep .kpi2{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:#3f3f46}
+  .scanrep .kpi2 b{font-size:16px;font-variant-numeric:tabular-nums}
+  /* 版本号的轴标识：小、灰、紧贴数字，避免喧宾夺主但让人一眼知道这是哪个号 */
+  .rb{color:#b45309;font-weight:600}
+  /* 本地服务的可行动提示：命令 + 复制 + 重新检测（替代原先的六处死胡同文案） */
+  .servehint{border:1px solid #e4e4e7;border-left:3px solid #2563eb;border-radius:7px;padding:9px 11px;background:#f8fafc;margin-top:6px}
+  .servehit{border:1px solid #bbf7d0;border-left:3px solid #16a34a;border-radius:7px;padding:9px 11px;background:#f0fdf4;margin-top:6px}
+  .cmdrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .cmdrow .cmd{flex:1;min-width:240px;margin:0}
+  .statbox{border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin:10px 0;background:#fcfcfd}
+  .statgrid{display:flex;gap:22px;flex-wrap:wrap}
+  .statgrid .st .k{font-size:11px;color:#71717a;margin-bottom:2px}
+  .statgrid .st .v{font-size:14.5px;font-weight:650;font-variant-numeric:tabular-nums}
+  .wstag{font-size:10.5px;color:#52525b;background:#f4f4f5;border:1px solid #e4e4e7;border-radius:5px;
+         padding:0 5px;margin-left:6px;font-weight:500}
+  .vax{display:inline-block;font-size:9.5px;font-weight:600;letter-spacing:.02em;color:#71717a;
+       background:#f4f4f5;border:1px solid #e4e4e7;border-radius:4px;padding:0 3px;margin-right:3px;
+       vertical-align:1px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .vax.c{color:#1d4ed8;background:#eff6ff;border-color:#dbeafe}
+  .vax.t{color:#7c3aed;background:#f5f3ff;border-color:#ede9fe}
+  .pill2{display:inline-block;background:#f4f4f5;border:1px solid #e4e4e7;border-radius:20px;
+         padding:1px 8px;font-size:11px;margin-right:4px;color:#52525b}
+  .plusbox{border:1px solid var(--line);border-radius:9px;padding:11px 13px;margin-bottom:14px;background:#fcfcfd}
+  .plusbox .ph{font-weight:650;font-size:12.5px;margin-bottom:5px}
+  .plusbox .prow{padding:6px 9px;border-radius:7px;cursor:pointer;font-size:13px;border:1px solid #e4e4e7;background:#fff;margin-bottom:4px}
+  .plusbox .prow:hover{background:#f4f4f5;border-color:#d4d4d8}
+  .plusbox .cmd{display:block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;
+       background:#f4f4f5;border:1px solid #e4e4e7;border-radius:6px;padding:5px 8px;margin:4px 0;
+       user-select:all;overflow-x:auto;white-space:pre}
+  [data-en]{display:none}
+  body.en [data-zh]{display:none}
+  body.en [data-en]{display:inline}
+</style>
+</head>
+<body>
+<header>
+  <h1><span data-zh>通用项目监理 · 仪表台</span><span data-en>Project Supervisor · Dashboard</span></h1>
+  <span class="sub" id="gen"></span>
+  <span class="grow"></span>
+  <span class="sub" data-zh>版本管理变化 · 测试评估变化</span>
+  <span class="sub" data-en>Versions track change · tests evaluate change</span>
+  <button class="lang" id="langBtn">EN</button>
+</header>
+<main id="app"></main>
+<script id="payload" type="application/json">{"generatedAt":"2026-09-25T04:51:16.215Z","config":{"version":"2026-09-20","_comment":"权重表与门限是『口径』的一部分（SPEC §8 步骤 4）。权重一旦改动必须另立 rubric 版本，否则跨版本 Δ 不可比。","weights":{"cost":1,"quality":1,"schedule":1,"goal":1,"constraint":1,"risk":1},"gates":{"infeasibleCap":25,"redLineCap":40},"tolerance":{"riskExposure":0.25,"drift":0.4},"output":{"language":"zh-en","decimals":2}},"pricing":{"currency":"CNY","unit":"per_million_tokens","source":"https://api-docs.deepseek.com/zh-cn/quick_start/pricing","fetchedAt":"2026-09-20","_comment":"单价表是『可查的口径』（SPEC §10 原则 4）。官方调价只改本文件并升 version，历史版本快照继续沿用其冻结的 pricingVersion，禁止回改历史成本分。","version":"2026-09","models":{"deepseek-flash":{"input":2,"cacheRead":0.04,"output":8,"offPeakInput":1,"offPeakCacheRead":0.02,"offPeakOutput":4,"note":"旧模型名 deepseek-v4-flash / deepseek-v4-flash-vision-exp 已下线，仍按本价计费"},"deepseek-v4-pro":{"input":9,"cacheRead":0.3,"output":27,"offPeakInput":4.5,"offPeakCacheRead":0.15,"offPeakOutput":13.5}},"peakWindows":[{"days":"Mon-Fri","from":"09:00","to":"12:00"},{"days":"Mon-Fri","from":"14:00","to":"18:00"}],"peakTimezone":"Asia/Shanghai","peakNote":"北京时间周一至周五（不含中国法定节假日）9:00-12:00、14:00-18:00 为高峰时段；其余（含周末与法定节假日）为空闲时段。空闲单价 = 高峰单价的一半。","holidays":[],"holidayNote":"法定节假日按空闲时段计费；此数组需人工维护（未维护时周末已自动按空闲处理，工作日节假日会偏高估，方向偏保守）"},"rubric":{"version":"r2","standardWeights":{"cost":1,"quality":1,"schedule":1,"goal":1,"constraint":1,"risk":1},"_comment":"口径版本（rubric-version）。判法 / 权重 / L0 判定基准 / 计价表 四项任一变动即新立版本，新旧分数禁止直接相减（SPEC §10 原则 4）。","createdAt":"2026-09-20","anchors":[{"band":"90-100","verdict":"exemplary","zh":"优于预期，可作该维度标杆版本"},{"band":"75-89","verdict":"pass","zh":"达预期，可直接放行"},{"band":"60-74","verdict":"pass-with-conditions","zh":"有偏差但可控，需附缓解措施"},{"band":"40-59","verdict":"intervene","zh":"需要干预：改方案、加资源或重定验收"},{"band":"1-39","verdict":"regress-or-restart","zh":"严重偏离，建议回退或重新立项"},{"band":"0 / capped","verdict":"capped","zh":"不可行或红线违反（fitness 被门限压制，非『分低』）"}],"gates":{"infeasible":{"cap":25,"zh":"任一考核点阈值物理上不可达 ⇒ 这条路不存在，须重配时间点"},"red-line":{"cap":40,"zh":"红线约束/考核点已违反 ⇒ 必须业主裁决"}},"basis":{"objective":"脚本从证据直接算出（会话日志、产出物清单、时间戳）","structured":"按本 rubric 结构化判断，须附依据与证据引用"},"l0":{"description":"判定基准（golden oracle）：什么算『对』。永不变，不属于任何版本。","pilotExample":"Agent-Loop 试点：一次执行被判定为『完成』= 交付物清单与任务要求逐项对上，且无红线约束违反"},"previousVersion":"r1","changeLog":[{"at":"2026-09-20","from":"r1","to":"r2","what":"quality 维改为以【验收测试通过率】为主判据：quality = 0.8×测试通过率 + 0.2×(1−错误率−重复率)；无测试结果时退化为过程代理并记缺口。","why":"r1 的 quality 只由运维指标合成，测试结果虽被 record 却从未参与评分 ⇒「用测试评估变化」为空话，TestV 前进不改变任何分数。","impact":"r1 与 r2 的分数【不可直接相减】（SPEC §10 原则 4）。历史版本沿用 r1 记分；r2 起须全量重算（R=六维）。"}]},"projects":[{"pid":"dsh-mv-session","project":{"id":"dsh-mv-session","name":"DSH-mv-session","_comment":"由 cmd.mjs serve 从「加入新工程」页登记。goal / checkpoints / constraints 需要人工补全 —— 登记只建立档案，不代替委托方陈述目标（SPEC §12）。","goal":{"text":"（待补：委托方对这一工程的目标陈述）","baseline":"（待补）"},"checkpoints":[{"id":"schedule","zh":"工期","text":"（待补阈值）","threshold":{"maxMinutes":120},"判据来源":"会话日志 API 请求间隔分解","basis":"active-minutes"},{"id":"budget","zh":"预算","text":"（待补阈值）","threshold":{"maxCost":50,"currency":"CNY"},"判据来源":"会话 usage × data/pricing.json"},{"id":"scope","zh":"范围","text":"（待补阈值）","threshold":{"minModules":1,"minTestFiles":1},"判据来源":"产出物清单（文件系统取证）"}],"constraints":[],"tolerance":{"riskExposure":0.25,"drift":0.4},"sut":{"ref":"dir:.","ver":"01.00.00.00","repo":".","kind":"directory","note":"CodeV：被测体 = 本工作区目录（记录随项目走）"},"testset":{"ref":"testset:dsh-mv-session-v1","ver":"00.01.00.00","repo":"../DSH-mv-session","kind":"conformance","content":"testset.json"},"versionScheme":{"codev":"CodeV 大.中.小.修订","testv":"TestV 大.中.小.修订","supv":"SupV 大.中.小.修订","_semantics":"四段中哪一段进位 = 本次变更的层级：L4→第1段、L3→第2段、L2→第3段、L1→第4段；进位后右侧清零。"}},"versions":[],"graph":{"lanes":[],"nodes":[],"edges":[]},"matrix":{"rows":[],"cols":[],"grid":[],"count":0},"guide":{"bestPerProblem":[],"bestPerMethod":[],"pending":[],"coverage":{"enrolled":0,"cells":0,"rows":0,"cols":0}},"testsetLabels":{"0.1.0.0":"初始","en:0.1.0.0":"initial"},"changeLog":[],"stops":[],"projectEn":{"name":"DSH-mv-session","goal":"（待补：委托方对这一工程的目标陈述）","baseline":"（待补）","checkpoints":[{"id":"schedule","zh":"工期","text":"（待补阈值）","source":"会话日志 API 请求间隔分解","rightRef":""},{"id":"budget","zh":"预算","text":"（待补阈值）","source":"会话 usage × data/pricing.json","rightRef":""},{"id":"scope","zh":"范围","text":"（待补阈值）","source":"产出物清单（文件系统取证）","rightRef":""}],"constraints":[]},"stats":{"path":"/Users/huangjian/vibe-workshop/DSH-mv-session","name":"DSH-mv-session","files":39,"dirs":15,"tests":3,"byExt":{"(无扩展名)":4,"json":12,"md":12,"yaml":2,"js":5,"yml":1,"cjs":1,"html":1,"command":1},"git":{"branch":"main","commits":[{"sha":"fd72e39","at":"2026-08-28 16:37","msg":"fix: incident DSH-MV-2026-0826-01 remediation R1-R4 (v0.1.2)"},{"sha":"b9d229e","at":"2026-08-28 16:18","msg":"docs: 整改报告 2026-08-26 迁移后加载超时(projcache 时序缺陷,R1-R4 待整改)"},{"sha":"6793ff3","at":"2026-08-25 20:43","msg":"release: dsh-mv-session v0.1.1 — desensitized zstd fallback + bilingual docs"},{"sha":"3e63710","at":"2026-08-25 20:40","msg":"docs: release-grade docs pass — desensitize, bilingualize, prune"},{"sha":"9e6da62","at":"2026-08-25 20:14","msg":"feat(scripts): bilingual one-click dsh web restart helper; docs: marketplace PR guide"},{"sha":"867db14","at":"2026-08-25 20:09","msg":"docs: mark npm publish done (dsh-mv-session@0.1.0)"},{"sha":"c86074e","at":"2026-08-25 19:38","msg":"docs: bilingual READMEs (README.md + README.zh.md + i18n consistency record)"},{"sha":"f3f60b6","at":"2026-08-25 19:27","msg":"docs: record live GitHub repo and tag in progress notes"},{"sha":"5511a5e","at":"2026-08-25 19:27","msg":"chore: point npm repository metadata at github.com/birdmanhj/dsh-mv-session"},{"sha":"89e0e54","at":"2026-08-25 19:15","msg":"docs: marketplace listing guide (npm + GitHub dsh-plugin topic + community directories)"},{"sha":"b39bb57","at":"2026-08-25 19:15","msg":"dsh-mv-session v0.1.0: frame-safe workspace/session migration plugin"}],"testCommits":[{"sha":"fd72e39","at":"2026-08-28 16:37","msg":"fix: incident DSH-MV-2026-0826-01 remediation R1-R4 (v0.1.2)"},{"sha":"b39bb57","at":"2026-08-25 19:15","msg":"dsh-mv-session v0.1.0: frame-safe workspace/session migration plugin"}],"latest":"2026-08-28 16:37","spanDays":3,"last30":2,"last90":11},"isWorkspace":true,"projects":[{"pid":"dsh-mv-session","name":"DSH-mv-session"},{"pid":"mvses","name":"dsh-mv-session"}],"suggestedSteps":[],"cached":false},"statsDir":"/Users/huangjian/vibe-workshop/DSH-mv-session"},{"pid":"mvses","project":{"id":"mvses","name":"dsh-mv-session","goal":{"text":"把 DSH 会话/工作区迁移（改名/改路径）做成可分发插件：帧安全重写会话日志、迁移全流程自动化（备份/校验/闭环协议）、发布 npm + GitHub 并可通过 dsh plugin add 安装。","baseline":"README.md（痛点→帧安全→一次重启协议→参数表），v0.1.0 起为对外基线"},"checkpoints":[{"id":"schedule","zh":"工期","text":"无外部截止日期（内部连续交付，2026-08-24 立项 → 08-25 首版 → 08-28 事故整改）","threshold":{},"判据来源":"git 提交时间线（spanDays=3, commits=11）","basis":"active-minutes","_gap":"无工期上限 ⇒ 进度维按满分占位（缺口已声明）"},{"id":"budget","zh":"预算","text":"无预算上限（个人项目，模型用量未设 cap）","threshold":{"currency":"CNY"},"判据来源":"无会话级 usage 采集","basis":"usage","_gap":"无预算上限 ⇒ 成本维按满分占位（缺口已声明）"},{"id":"scope","zh":"范围","text":"核心脚本 1 + 插件包 1 + 回归测试 3 套 + 双语文档；npm/GitHub 双发布","threshold":{"minModules":1,"minTestFiles":3},"判据来源":"产出物清单（文件系统取证）","basis":"artifact"}],"constraints":[{"id":"redline-frame","zh":"红线：不得破坏 DSH zstd 帧不变式","text":"任何版本下 dsh web 必须能启动并读回被迁移的会话（第 0 帧恰一行 header）","level":"red","判据":"tests/migrate_e2e_scratch.js --boot 真实 dsh web boot + 帧自检"},{"id":"kpi-protocol","zh":"考核点：迁移协议可执行","text":"演练→实跑→停服→fix-projcache→启动→冒烟→删symlink→verify 闭环，步骤有文档","level":"kpi","判据":"docs/user-manual*.md §4 + manual_remaining 输出"},{"id":"kpi-release","zh":"考核点：双轨发布","text":"npm 包可 dsh plugin add 安装；GitHub 仓库含 topic dsh-plugin","level":"kpi","判据":"npm view dsh-mv-session；github.com/birdmanhj/dsh-mv-session"}],"tolerance":{"riskExposure":0.25,"drift":0.4},"sut":{"ref":"dir:.","ver":"01.00.00.00","repo":".","kind":"directory","note":"CodeV：被测体 = 登记时指定的目录"},"testset":{"ref":"testset:mvses-v1","ver":"00.01.00.00","repo":".","kind":"conformance","content":"testset.json"},"versionScheme":{"codev":"CodeV 大.中.小.修订","testv":"TestV 大.中.小.修订","supv":"SupV 大.中.小.修订","_semantics":"四段中哪一段进位 = 本次变更的层级：L4→第1段、L3→第2段、L2→第3段、L1→第4段；进位后右侧清零。"}},"versions":[{"id":"1.0.0.0","supv":"1.0.0.0","path":"V0","parent":null,"createdAt":"2026-09-25T04:51:10.268Z","frozenPair":{"sut":{"ref":"01.00.00.00","changed":true},"test":{"ref":"00.01.00.00","changed":true}},"coords":{"sut":"01.00.00.00","test":"00.01.00.00"},"sources":{"code":{"number":"01.00.00.00","repo":".","git":{"repo":".","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}},"test":{"number":"00.01.00.00","repo":".","git":{"repo":".","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}}},"git":{"sut":{"repo":".","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null},"test":{"repo":".","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}},"backfilled":false,"change":{"Lmodel":4,"Lset":4,"L":4,"M":"总","A":"model-side","anchor":{"layer":"none","frozenAt":"V0","source":"baseline"},"checkpointsTouched":[],"requestedBy":"owner","confirmed":true,"note":"基线：场景确立（L4），R=全部六维，I=∅"},"R":["cost","quality","schedule","goal","constraint","risk"],"I":[],"dimensions":{"cost":{"value":100,"confidence":0.7,"basis":"objective","evidence":["session:session-23194196-d247-40e1-bdb9-aed7e272442d#usage"],"gaps":["项目未设预算上限 ⇒ 成本维无判据，按满分占位"]},"quality":{"value":90.13,"confidence":0.6000000000000001,"basis":"objective","evidence":["session:session-23194196-d247-40e1-bdb9-aed7e272442d#tool/result","errors=29/476","repeats=18/476"],"gaps":["无独立验收判据（测试通过率或产出物逐项核验）；缺验收测试结果 ⇒ 质量维以过程指标代理","缺产出物清单 ⇒ 范围考核点未取证"]},"schedule":{"value":100,"confidence":0.7,"basis":"objective","evidence":["session:session-23194196-d247-40e1-bdb9-aed7e272442d#timing"],"gaps":["项目未设工期上限 ⇒ 进度维无判据，按满分占位"]},"goal":{"value":100,"confidence":0.7,"basis":"structured","evidence":["project:mvses#goal"],"gaps":["未提供目标漂移证据（无变更单对照）⇒ 目标维按未漂移占位"]},"constraint":{"value":100,"confidence":0.8,"basis":"objective","evidence":["violations=none","redLines=none"],"gaps":["项目未声明红线约束 ⇒ 约束维判据不足"]},"risk":{"value":40,"confidence":0.6,"basis":"structured","evidence":["waitingRatio=1","riskExposure=1 (tolerance=0.25)","idleGaps=17","errors=29"],"gaps":["以等待占比作风险代理指标；无独立风险台账（概率×影响）⇒ 本条置信度最低"]}},"fitness":{"value":84.36,"raw":84.36,"cap":null,"gate":null,"feasible":true,"confidence":0.6},"deltaVsParent":null,"verdict":{"band":"pass","tradeoff":null,"notes":"基线快照"},"evidence":{"session":"session-23194196-d247-40e1-bdb9-aed7e272442d","steps":469,"toolCalls":476,"toolErrors":29,"repeats":18,"cost":59.614207,"currency":"CNY","pricingVersion":"2026-09","minutes":45887.59},"rawIds":{"id":"01.00.00.00","supv":"01.00.00.00","parent":null},"parents":[],"sourcesEn":null},{"id":"1.0.0.1","supv":"1.0.0.1","path":"V1","codev":"git:v0.1.1","testv":"testset:mvses-v1","coords":{"sut":"git:v0.1.1","test":"testset:mvses-v1"},"sources":{"code":{"number":"git:v0.1.1","repo":".","git":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}},"test":{"number":"testset:mvses-v1","repo":".","subsets":[],"subsetsTouched":[],"content":null,"git":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}}},"git":{"sut":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null},"test":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}},"backfilled":false,"rubricFingerprint":{"weights":{"cost":1,"quality":1,"schedule":1,"goal":1,"constraint":1,"risk":1},"l0":"判定基准（golden oracle）：什么算『对』。永不变，不属于任何版本。"},"axis":"model-side","branch":"小","parents":["1.0.0.0"],"parent":"1.0.0.0","createdAt":"2026-09-25T04:51:15.282Z","frozenPair":{"sut":{"ref":"git:v0.1.1","changed":true},"test":{"ref":"testset:mvses-v1","changed":false}},"change":{"Lmodel":1,"Lset":null,"anchor":{"layer":"L4","frozenAt":"V0","source":"data/projects/mvses/versions/V0.json"},"checkpointsTouched":[],"requestedBy":"owner","confirmed":true,"A":"model-side","L":1,"M":"小"},"rubricVersion":"r2","pricingVersion":"2026-09","evidenceProbe":null,"R":["schedule","risk"],"I":["cost","quality","goal","constraint"],"dimensions":{"cost":{"value":100,"confidence":0.7,"basis":"objective","evidence":["session:session-23194196-d247-40e1-bdb9-aed7e272442d#usage"],"gaps":["项目未设预算上限 ⇒ 成本维无判据，按满分占位"],"inherited":true,"inheritedFrom":"1.0.0.0"},"quality":{"value":90.13,"confidence":0.6000000000000001,"basis":"objective","evidence":["session:session-23194196-d247-40e1-bdb9-aed7e272442d#tool/result","errors=29/476","repeats=18/476"],"gaps":["无独立验收判据（测试通过率或产出物逐项核验）；缺验收测试结果 ⇒ 质量维以过程指标代理","缺产出物清单 ⇒ 范围考核点未取证"],"inherited":true,"inheritedFrom":"1.0.0.0"},"schedule":{"value":100,"confidence":1,"basis":"structured","evidence":[],"gaps":[]},"goal":{"value":100,"confidence":0.7,"basis":"structured","evidence":["project:mvses#goal"],"gaps":["未提供目标漂移证据（无变更单对照）⇒ 目标维按未漂移占位"],"inherited":true,"inheritedFrom":"1.0.0.0"},"constraint":{"value":100,"confidence":0.8,"basis":"objective","evidence":["violations=none","redLines=none"],"gaps":["项目未声明红线约束 ⇒ 约束维判据不足"],"inherited":true,"inheritedFrom":"1.0.0.0"},"risk":{"value":72,"confidence":1,"basis":"structured","evidence":[],"gaps":[]}},"fitness":{"value":93.05,"raw":93.05,"cap":null,"gate":null,"feasible":true,"confidence":0.6},"deltaVsParent":{"fitness":8.69,"dims":{"schedule":0,"risk":32},"tradeoff":"neutral","R":["schedule","risk"]},"verdict":{"band":"exemplary","tradeoff":"neutral","notes":""},"rawIds":{"id":"01.00.00.01","supv":"01.00.00.01","codev":"git:v0.1.1","testv":"testset:mvses-v1","parent":"01.00.00.00"},"sourcesEn":null},{"id":"1.0.1.0","supv":"1.0.1.0","path":"V1.1","codev":"git:v0.1.2","testv":"testset:mvses-v1","coords":{"sut":"git:v0.1.2","test":"testset:mvses-v1"},"sources":{"code":{"number":"git:v0.1.2","repo":".","git":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}},"test":{"number":"testset:mvses-v1","repo":".","subsets":[],"subsetsTouched":[],"content":null,"git":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}}},"git":{"sut":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null},"test":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}},"backfilled":false,"rubricFingerprint":{"weights":{"cost":1,"quality":1,"schedule":1,"goal":1,"constraint":1,"risk":1},"l0":"判定基准（golden oracle）：什么算『对』。永不变，不属于任何版本。"},"axis":"model-side","branch":"中","parents":["1.0.0.1"],"parent":"1.0.0.1","createdAt":"2026-09-25T04:51:15.762Z","frozenPair":{"sut":{"ref":"git:v0.1.2","changed":true},"test":{"ref":"testset:mvses-v1","changed":false}},"change":{"Lmodel":2,"Lset":null,"anchor":{"layer":"L1","frozenAt":"V1","source":"data/projects/mvses/versions/V1.json"},"checkpointsTouched":["redline-frame"],"requestedBy":"owner","confirmed":true,"A":"model-side","L":2,"M":"中"},"rubricVersion":"r2","pricingVersion":"2026-09","evidenceProbe":null,"R":["cost","quality","goal","constraint","risk"],"I":["schedule"],"dimensions":{"cost":{"value":90,"confidence":1,"basis":"structured","evidence":[],"gaps":[]},"quality":{"value":92,"confidence":1,"basis":"structured","evidence":[],"gaps":[]},"schedule":{"value":100,"confidence":1,"basis":"structured","evidence":[],"gaps":[],"inherited":true,"inheritedFrom":"1.0.0.1"},"goal":{"value":100,"confidence":1,"basis":"structured","evidence":[],"gaps":[]},"constraint":{"value":100,"confidence":1,"basis":"structured","evidence":[],"gaps":[]},"risk":{"value":78,"confidence":1,"basis":"structured","evidence":[],"gaps":[]}},"fitness":{"value":92.97,"raw":92.97,"cap":null,"gate":null,"feasible":true,"confidence":1},"deltaVsParent":{"fitness":-0.08,"dims":{"cost":-10,"quality":1.87,"goal":0,"constraint":0,"risk":6},"tradeoff":"neutral","R":["cost","quality","goal","constraint","risk"]},"verdict":{"band":"exemplary","tradeoff":"neutral","notes":""},"rawIds":{"id":"01.00.01.00","supv":"01.00.01.00","codev":"git:v0.1.2","testv":"testset:mvses-v1","parent":"01.00.00.01"},"sourcesEn":null},{"id":"1.0.2.0","supv":"1.0.2.0","path":"V1.1.1","codev":"git:v0.1.2","testv":"testset:mvses-timing-v1","coords":{"sut":"git:v0.1.2","test":"testset:mvses-timing-v1"},"sources":{"code":{"number":"git:v0.1.2","repo":".","git":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}},"test":{"number":"testset:mvses-timing-v1","repo":".","subsets":[],"subsetsTouched":[],"content":null,"git":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}}},"git":{"sut":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null},"test":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}},"backfilled":false,"rubricFingerprint":{"weights":{"cost":1,"quality":1,"schedule":1,"goal":1,"constraint":1,"risk":1},"l0":"判定基准（golden oracle）：什么算『对』。永不变，不属于任何版本。"},"axis":"test-side","branch":"中","parents":["1.0.1.0"],"parent":"1.0.1.0","createdAt":"2026-09-25T04:51:16.203Z","frozenPair":{"sut":{"ref":"git:v0.1.2","changed":false},"test":{"ref":"testset:mvses-timing-v1","changed":true}},"change":{"Lmodel":null,"Lset":2,"anchor":{"layer":"L1","frozenAt":"V2","source":"data/projects/mvses/versions/V2.json"},"checkpointsTouched":[],"requestedBy":"owner","confirmed":true,"A":"test-side","L":2,"M":"中"},"rubricVersion":"r2","pricingVersion":"2026-09","evidenceProbe":null,"R":["quality","risk"],"I":["cost","schedule","goal","constraint"],"dimensions":{"cost":{"value":90,"confidence":1,"basis":"structured","evidence":[],"gaps":[],"inherited":true,"inheritedFrom":"1.0.1.0"},"quality":{"value":95,"confidence":1,"basis":"structured","evidence":[],"gaps":[]},"schedule":{"value":100,"confidence":1,"basis":"structured","evidence":[],"gaps":[],"inherited":true,"inheritedFrom":"1.0.1.0"},"goal":{"value":100,"confidence":1,"basis":"structured","evidence":[],"gaps":[],"inherited":true,"inheritedFrom":"1.0.1.0"},"constraint":{"value":100,"confidence":1,"basis":"structured","evidence":[],"gaps":[],"inherited":true,"inheritedFrom":"1.0.1.0"},"risk":{"value":80,"confidence":1,"basis":"structured","evidence":[],"gaps":[]}},"fitness":{"value":93.87,"raw":93.87,"cap":null,"gate":null,"feasible":true,"confidence":1},"deltaVsParent":{"fitness":0.9,"dims":{"quality":3,"risk":2},"tradeoff":"neutral","R":["quality","risk"]},"verdict":{"band":"exemplary","tradeoff":"neutral","notes":""},"rawIds":{"id":"01.00.02.00","supv":"01.00.02.00","codev":"git:v0.1.2","testv":"testset:mvses-timing-v1","parent":"01.00.01.00"},"sourcesEn":null}],"graph":{"lanes":[{"id":"总","lane":0,"color":"#c62828","M":"总"},{"id":"小","lane":1,"color":"#1d4ed8","M":"小"},{"id":"中","lane":2,"color":"#ca8a04","M":"中"}],"nodes":[{"id":"1.0.0.0","parents":[],"codev":"01.00.00.00","testv":"00.01.00.00","lane":0,"branch":"总","color":"#c62828","createdAt":"2026-09-25T04:51:10.268Z","M":"总","L":4,"A":"model-side","fitness":84.36,"cap":null,"gate":null,"isMerge":false,"rollbackFrom":null,"note":"基线：场景确立（L4），R=全部六维，I=∅","noteEn":null,"rawId":"01.00.00.00"},{"id":"1.0.0.1","parents":["1.0.0.0"],"codev":"git:v0.1.1","testv":"testset:mvses-v1","lane":1,"branch":"小","color":"#1d4ed8","createdAt":"2026-09-25T04:51:15.282Z","M":"小","L":1,"A":"model-side","fitness":93.05,"cap":null,"gate":null,"isMerge":false,"rollbackFrom":null,"note":null,"noteEn":null,"rawId":"01.00.00.01"},{"id":"1.0.1.0","parents":["1.0.0.1"],"codev":"git:v0.1.2","testv":"testset:mvses-v1","lane":2,"branch":"中","color":"#ca8a04","createdAt":"2026-09-25T04:51:15.762Z","M":"中","L":2,"A":"model-side","fitness":92.97,"cap":null,"gate":null,"isMerge":false,"rollbackFrom":null,"note":null,"noteEn":null,"rawId":"01.00.01.00"},{"id":"1.0.2.0","parents":["1.0.1.0"],"codev":"git:v0.1.2","testv":"testset:mvses-timing-v1","lane":2,"branch":"中","color":"#ca8a04","createdAt":"2026-09-25T04:51:16.203Z","M":"中","L":2,"A":"test-side","fitness":93.87,"cap":null,"gate":null,"isMerge":false,"rollbackFrom":null,"note":null,"noteEn":null,"rawId":"01.00.02.00"}],"edges":[{"from":"1.0.0.0","to":"1.0.0.1"},{"from":"1.0.0.1","to":"1.0.1.0"},{"from":"1.0.1.0","to":"1.0.2.0"}]},"matrix":{"rows":["1.0.0.0","git:v0.1.1","git:v0.1.2"],"cols":["0.1.0.0","testset:mvses-v1","testset:mvses-timing-v1"],"grid":[[{"id":"1.0.0.0","supv":"1.0.0.0","codev":"1.0.0.0","testv":"0.1.0.0","fitness":84.36,"cap":null,"gate":null,"status":"measured","hasResult":false,"axis":null,"git":{"sut":{"repo":".","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null},"test":{"repo":".","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}},"testResult":null},null,null],[null,{"id":"1.0.0.1","supv":"1.0.0.1","codev":"git:v0.1.1","testv":"testset:mvses-v1","fitness":93.05,"cap":null,"gate":null,"status":"measured","hasResult":false,"axis":"model-side","git":{"sut":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null},"test":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}},"testResult":null},null],[null,{"id":"1.0.1.0","supv":"1.0.1.0","codev":"git:v0.1.2","testv":"testset:mvses-v1","fitness":92.97,"cap":null,"gate":null,"status":"measured","hasResult":false,"axis":"model-side","git":{"sut":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null},"test":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}},"testResult":null},{"id":"1.0.2.0","supv":"1.0.2.0","codev":"git:v0.1.2","testv":"testset:mvses-timing-v1","fitness":93.87,"cap":null,"gate":null,"status":"measured","hasResult":false,"axis":"test-side","git":{"sut":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null},"test":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}},"testResult":null}]],"count":4},"guide":{"bestPerProblem":[{"testVer":"0.1.0.0","comparable":1,"best":{"id":"1.0.0.0","supv":"1.0.0.0","codev":"1.0.0.0","testv":"0.1.0.0","fitness":84.36,"cap":null,"gate":null,"status":"measured","hasResult":false,"axis":null,"sources":{"code":{"number":"01.00.00.00","repo":".","git":{"repo":".","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}},"test":{"number":"00.01.00.00","repo":".","git":{"repo":".","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}}},"testResult":null,"coords":{"sut":"1.0.0.0","test":"0.1.0.0"}},"runnerUp":null,"gain":null,"gatedNote":null},{"testVer":"testset:mvses-v1","comparable":2,"best":{"id":"1.0.0.1","supv":"1.0.0.1","codev":"git:v0.1.1","testv":"testset:mvses-v1","fitness":93.05,"cap":null,"gate":null,"status":"measured","hasResult":false,"axis":"model-side","sources":{"code":{"number":"git:v0.1.1","repo":".","git":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}},"test":{"number":"testset:mvses-v1","repo":".","subsets":[],"subsetsTouched":[],"content":null,"git":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}}},"testResult":null,"coords":{"sut":"git:v0.1.1","test":"testset:mvses-v1"}},"runnerUp":{"id":"1.0.1.0","supv":"1.0.1.0","codev":"git:v0.1.2","testv":"testset:mvses-v1","fitness":92.97,"cap":null,"gate":null,"status":"measured","hasResult":false,"axis":"model-side","sources":{"code":{"number":"git:v0.1.2","repo":".","git":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}},"test":{"number":"testset:mvses-v1","repo":".","subsets":[],"subsetsTouched":[],"content":null,"git":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}}},"testResult":null,"coords":{"sut":"git:v0.1.2","test":"testset:mvses-v1"}},"gain":0.08,"gatedNote":null},{"testVer":"testset:mvses-timing-v1","comparable":1,"best":{"id":"1.0.2.0","supv":"1.0.2.0","codev":"git:v0.1.2","testv":"testset:mvses-timing-v1","fitness":93.87,"cap":null,"gate":null,"status":"measured","hasResult":false,"axis":"test-side","sources":{"code":{"number":"git:v0.1.2","repo":".","git":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}},"test":{"number":"testset:mvses-timing-v1","repo":".","subsets":[],"subsetsTouched":[],"content":null,"git":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}}},"testResult":null,"coords":{"sut":"git:v0.1.2","test":"testset:mvses-timing-v1"}},"runnerUp":null,"gain":null,"gatedNote":null}],"bestPerMethod":[{"sutVer":"1.0.0.0","comparable":1,"best":{"id":"1.0.0.0","supv":"1.0.0.0","codev":"1.0.0.0","testv":"0.1.0.0","fitness":84.36,"cap":null,"gate":null,"status":"measured","hasResult":false,"axis":null,"sources":{"code":{"number":"01.00.00.00","repo":".","git":{"repo":".","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}},"test":{"number":"00.01.00.00","repo":".","git":{"repo":".","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}}},"testResult":null,"coords":{"sut":"1.0.0.0","test":"0.1.0.0"}},"worst":null,"spread":null},{"sutVer":"git:v0.1.1","comparable":1,"best":{"id":"1.0.0.1","supv":"1.0.0.1","codev":"git:v0.1.1","testv":"testset:mvses-v1","fitness":93.05,"cap":null,"gate":null,"status":"measured","hasResult":false,"axis":"model-side","sources":{"code":{"number":"git:v0.1.1","repo":".","git":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}},"test":{"number":"testset:mvses-v1","repo":".","subsets":[],"subsetsTouched":[],"content":null,"git":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}}},"testResult":null,"coords":{"sut":"git:v0.1.1","test":"testset:mvses-v1"}},"worst":null,"spread":null},{"sutVer":"git:v0.1.2","comparable":2,"best":{"id":"1.0.2.0","supv":"1.0.2.0","codev":"git:v0.1.2","testv":"testset:mvses-timing-v1","fitness":93.87,"cap":null,"gate":null,"status":"measured","hasResult":false,"axis":"test-side","sources":{"code":{"number":"git:v0.1.2","repo":".","git":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}},"test":{"number":"testset:mvses-timing-v1","repo":".","subsets":[],"subsetsTouched":[],"content":null,"git":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}}},"testResult":null,"coords":{"sut":"git:v0.1.2","test":"testset:mvses-timing-v1"}},"worst":{"id":"1.0.1.0","supv":"1.0.1.0","codev":"git:v0.1.2","testv":"testset:mvses-v1","fitness":92.97,"cap":null,"gate":null,"status":"measured","hasResult":false,"axis":"model-side","sources":{"code":{"number":"git:v0.1.2","repo":".","git":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}},"test":{"number":"testset:mvses-v1","repo":".","subsets":[],"subsetsTouched":[],"content":null,"git":{"repo":"/Users/huangjian/vibe-workshop/DSH-mv-session","head":"fd72e39b54d0d2bb7f96f0338b82669c5327bd56","branch":"main","dirty":true,"describe":"v0.1.2","error":null}}},"testResult":null,"coords":{"sut":"git:v0.1.2","test":"testset:mvses-v1"}},"spread":0.9}],"pending":[{"codev":"1.0.0.0","testv":"testset:mvses-v1","why":"尚未组建（没有对应 SupV）"},{"codev":"1.0.0.0","testv":"testset:mvses-timing-v1","why":"尚未组建（没有对应 SupV）"},{"codev":"git:v0.1.1","testv":"0.1.0.0","why":"尚未组建（没有对应 SupV）"},{"codev":"git:v0.1.1","testv":"testset:mvses-timing-v1","why":"尚未组建（没有对应 SupV）"},{"codev":"git:v0.1.2","testv":"0.1.0.0","why":"尚未组建（没有对应 SupV）"}],"coverage":{"enrolled":4,"cells":9,"rows":3,"cols":3}},"testsetLabels":{"0.1.0.0":"初始","en:0.1.0.0":"initial"},"changeLog":[],"stops":[],"projectEn":{"name":"dsh-mv-session","goal":"把 DSH 会话/工作区迁移（改名/改路径）做成可分发插件：帧安全重写会话日志、迁移全流程自动化（备份/校验/闭环协议）、发布 npm + GitHub 并可通过 dsh plugin add 安装。","baseline":"README.md（痛点→帧安全→一次重启协议→参数表），v0.1.0 起为对外基线","checkpoints":[{"id":"schedule","zh":"工期","text":"无外部截止日期（内部连续交付，2026-08-24 立项 → 08-25 首版 → 08-28 事故整改）","source":"git 提交时间线（spanDays=3, commits=11）","rightRef":""},{"id":"budget","zh":"预算","text":"无预算上限（个人项目，模型用量未设 cap）","source":"无会话级 usage 采集","rightRef":""},{"id":"scope","zh":"范围","text":"核心脚本 1 + 插件包 1 + 回归测试 3 套 + 双语文档；npm/GitHub 双发布","source":"产出物清单（文件系统取证）","rightRef":""}],"constraints":[{"id":"redline-frame","level":"red","text":"任何版本下 dsh web 必须能启动并读回被迁移的会话（第 0 帧恰一行 header）"},{"id":"kpi-protocol","level":"kpi","text":"演练→实跑→停服→fix-projcache→启动→冒烟→删symlink→verify 闭环，步骤有文档"},{"id":"kpi-release","level":"kpi","text":"npm 包可 dsh plugin add 安装；GitHub 仓库含 topic dsh-plugin"}]},"stats":{"path":"/Users/huangjian/vibe-workshop/DSH-mv-session","name":"DSH-mv-session","files":39,"dirs":15,"tests":3,"byExt":{"(无扩展名)":4,"json":12,"md":12,"yaml":2,"js":5,"yml":1,"cjs":1,"html":1,"command":1},"git":{"branch":"main","commits":[{"sha":"fd72e39","at":"2026-08-28 16:37","msg":"fix: incident DSH-MV-2026-0826-01 remediation R1-R4 (v0.1.2)"},{"sha":"b9d229e","at":"2026-08-28 16:18","msg":"docs: 整改报告 2026-08-26 迁移后加载超时(projcache 时序缺陷,R1-R4 待整改)"},{"sha":"6793ff3","at":"2026-08-25 20:43","msg":"release: dsh-mv-session v0.1.1 — desensitized zstd fallback + bilingual docs"},{"sha":"3e63710","at":"2026-08-25 20:40","msg":"docs: release-grade docs pass — desensitize, bilingualize, prune"},{"sha":"9e6da62","at":"2026-08-25 20:14","msg":"feat(scripts): bilingual one-click dsh web restart helper; docs: marketplace PR guide"},{"sha":"867db14","at":"2026-08-25 20:09","msg":"docs: mark npm publish done (dsh-mv-session@0.1.0)"},{"sha":"c86074e","at":"2026-08-25 19:38","msg":"docs: bilingual READMEs (README.md + README.zh.md + i18n consistency record)"},{"sha":"f3f60b6","at":"2026-08-25 19:27","msg":"docs: record live GitHub repo and tag in progress notes"},{"sha":"5511a5e","at":"2026-08-25 19:27","msg":"chore: point npm repository metadata at github.com/birdmanhj/dsh-mv-session"},{"sha":"89e0e54","at":"2026-08-25 19:15","msg":"docs: marketplace listing guide (npm + GitHub dsh-plugin topic + community directories)"},{"sha":"b39bb57","at":"2026-08-25 19:15","msg":"dsh-mv-session v0.1.0: frame-safe workspace/session migration plugin"}],"testCommits":[{"sha":"fd72e39","at":"2026-08-28 16:37","msg":"fix: incident DSH-MV-2026-0826-01 remediation R1-R4 (v0.1.2)"},{"sha":"b39bb57","at":"2026-08-25 19:15","msg":"dsh-mv-session v0.1.0: frame-safe workspace/session migration plugin"}],"latest":"2026-08-28 16:37","spanDays":3,"last30":2,"last90":11},"isWorkspace":true,"projects":[{"pid":"dsh-mv-session","name":"DSH-mv-session"},{"pid":"mvses","name":"dsh-mv-session"}],"suggestedSteps":[],"cached":true},"statsDir":"/Users/huangjian/vibe-workshop/DSH-mv-session"}]}</script>
+<script>
+/* ── 多语言对照表（内联自 lib/i18n.mjs；单一机制：中文原文 → 对照表 → 模式表）── */
+const I18N_DICT = {"成本":{"en":"Cost"},"质量":{"en":"Quality"},"进度":{"en":"Schedule"},"目标":{"en":"Goal"},"约束":{"en":"Constraint"},"风险":{"en":"Risk"},"适应度":{"en":"Fitness"},"适应度（fitness）":{"en":"fitness"},"无独立验收判据（测试通过率或产出物逐项核验）；缺验收测试结果 ⇒ 质量维以过程指标代理":{"en":"No independent acceptance criterion (test pass rate or item-by-item deliverable check); no acceptance run recorded ⇒ quality falls back to a process proxy"},"缺产出物清单 ⇒ 范围考核点未取证":{"en":"No deliverables manifest ⇒ the scope checkpoint has no evidence"},"项目未设工期上限 ⇒ 进度维无判据，按满分占位":{"en":"No schedule cap configured ⇒ the schedule dimension has no criterion and is scored full as a placeholder"},"无独立验收判据（测试通过率或产出物逐项核验）；缺产出物清单 ⇒ 范围考核点未取证":{"en":"No independent acceptance criterion (test pass rate or item-by-item deliverable check); no deliverables manifest ⇒ the scope checkpoint has no evidence"},"未提供目标漂移证据（无变更单对照）⇒ 目标维按未漂移占位":{"en":"No goal-drift evidence (no change order to compare) ⇒ the goal dimension is a no-drift placeholder"},"以等待占比作风险代理指标；无独立风险台账（概率×影响）⇒ 本条置信度最低":{"en":"Idle share is used as a risk proxy; no standalone risk ledger (probability × impact) ⇒ lowest confidence here"},"打开已关闭的项目":{"en":"Reopen a closed project"},"新建工程":{"en":"Create a new project"},"打开 / 新建工程":{"en":"Open or create a project"},"关闭该标签":{"en":"Close this tab"},"data/projects 下的项目都已打开":{"en":"Every project under data/projects is already open"},"本页是静态单文件，不能写盘。在项目根目录执行下面两行，再刷新本页：":{"en":"This page is a static file and cannot write to disk. Run these two lines in your project root, then reload:"},"选一个目录，就地采集，形成报表":{"en":"pick a folder, scan it in place, get a report"},"① 选择工程目录":{"en":"1. Choose the project folder"},"选定后在浏览器内直接读取该目录（不上传、不联网）：文件与目录计数、测试文件、git 仓库与提交历史。":{"en":"The folder is read locally in your browser (nothing is uploaded): file/folder counts, test files, git repo and commit history."},"选择工程目录…":{"en":"Choose folder…"},"当前浏览器不支持目录选择（需要 Chrome / Edge 的 File System Access API）。可在下方手动填入路径，读取仍需本地服务模式。":{"en":"This browser has no directory picker (needs the File System Access API). Paste a path below instead; reading it still requires the local server mode."},"此浏览器不支持目录选择。请用 Chrome / Edge，或改用本地服务模式。":{"en":"This browser has no directory picker. Use Chrome / Edge, or the local server mode."},"或手动填路径（供本地服务模式使用）":{"en":"or paste a path (used by the local server mode)"},"② 在该目录下运行安装":{"en":"2. Run setup inside that folder"},"浏览器没有 shell，跑不了安装命令。这一步需要本地服务模式：":{"en":"A browser has no shell, so it cannot run setup. This step needs the local server mode:"},"服务起来后，本页改走系统文件管理器选目录，并可在该目录下执行 setup 清单、实时显示进度，最后把 git 历史与测试轨迹并入报表。":{"en":"Once running, this page picks folders through the OS file manager, executes the setup manifest with live progress, and folds git history plus test traces into the report."},"重新打开已关闭的项目":{"en":"Reopen a closed project"},"被测物（CodeV）⧵ 测试集（TestV）":{"en":"SUT (CodeV) ⧵ TESTSET (TestV)"},"已在标签页":{"en":"open as tab"},"不在本页数据里，需重新生成仪表台":{"en":"not in this page's data; regenerate the dashboard"},"再次添加同一目录不会新建工程 —— 监理数据由 data/projects/ 决定，而浏览器不能写盘。要打开已有工程，点下面的条目；要新增工程，用本地服务模式。":{"en":"Adding the same folder again does not create a second project: the data lives in data/projects/ and a browser cannot write there. Click an entry to open it; use the local server mode to add a new one."},"登记为工程":{"en":"Register as a project"},"这个目录还不是监理工作区（没有 data/projects/）。登记需要写盘，浏览器做不到 —— 需要本地服务模式。本次采集只读，未改动该目录。":{"en":"This folder is not a supervision workspace yet (no data/projects/). Registering needs disk writes, which a browser cannot do — use the local server mode. This scan was read-only; nothing was changed."},"正在采集…":{"en":"Scanning…"},"采集结果":{"en":"Scan result"},"文件":{"en":"files"},"目录":{"en":"folders"},"测试文件":{"en":"test files"},"是":{"en":"yes"},"否":{"en":"no"},"时间":{"en":"Time"},"说明":{"en":"Message"},"历史提交（读自 .git/logs/HEAD，最近 12 条）":{"en":"Commit history (from .git/logs/HEAD, latest 12)"},"该目录不是 git 仓库，或读不到提交记录。":{"en":"Not a git repository, or no commit log readable."},"级差":{"en":"Grade"},"本车道第":{"en":"lane #"},"个":{"en":""},"(无扩展名)":{"en":"(no extension)"},"灰字 = 继承自父版本（未重算；该层级的重算集不含这一维）":{"en":"grey = inherited from the parent version (not recomputed by this layer)"},"彩色粗字 = 本版本实测":{"en":"bold coloured = measured in this version"},"以下维度在所有版本中都是【继承】的（这些层级没有重算它们），故不逐格重复：":{"en":"Inherited in every version (no layer recomputed them), so not repeated per column:"},"本次实测":{"en":"measured in this version"},"继承自父版本（未重算）":{"en":"inherited from the parent version, not recomputed"},"继承自":{"en":"inherited from"},"回退":{"en":"rollback"},"斜线 = 分叉/合并；双圈 = 被门限封顶；↩ = 回退节点（与记分卡的继承无关）":{"en":"diagonal = branch/merge; double ring = gated; ↩ = rollback (unrelated to inheritance)"},"统计不可用：":{"en":"Statistics unavailable: "},"项目统计（自动采集）":{"en":"Project statistics (collected automatically)"},"规模":{"en":"Scale"},"节奏":{"en":"Cadence"},"近 30 天":{"en":"last 30d"},"近 90 天":{"en":"last 90d"},"测试轨迹":{"en":"Test trail"},"路径含 test / spec":{"en":"paths matching test / spec"},"最新提交":{"en":"Latest commit"},"次提交":{"en":"commits"},"最近":{"en":"latest"},"跨度":{"en":"Spread"},"天":{"en":"d"},"工程未声明被测目录（project.sut.repo）":{"en":"the project declares no SUT directory (project.sut.repo)"},"尚未立项":{"en":"not baselined yet"},"该工程已登记，统计已自动采集（见上）；评分需要先立基线：":{"en":"Registered; statistics are collected automatically (above). Scoring needs a baseline first:"},"一个按钮：选目录 → 自动采集、纳管、安装 → 打开报表页":{"en":"one button: pick a folder → scan, register, set up → open the report"},"① 选择工程目录并开始…":{"en":"1. Choose a folder and start…"},"会弹出系统文件管理器；选定后自动完成采集、登记、安装与报表，无需再点。":{"en":"An OS file manager opens; after you pick, scanning, registration, setup and the report run automatically."},"或手动填路径":{"en":"or paste a path"},"仅采集（登记前先看看）":{"en":"scan only (peek before registering)"},"等待系统目录选择器…":{"en":"waiting for the folder picker…"},"无法弹出选择器，请用下方「手动填路径」":{"en":"cannot open the picker; use \"or paste a path\" below"},"采集目录":{"en":"Scan folder"},"登记纳管":{"en":"Register"},"工程 id：":{"en":"project id: "},"已登记为工程 ":{"en":"registered as "},"已存在，沿用 ":{"en":"already registered, reusing "},"该目录已登记为工程 ":{"en":"already registered as "},"运行安装":{"en":"Run setup"},"安装完成":{"en":"setup finished"},"安装中断":{"en":"setup aborted"},"进度连接中断":{"en":"progress stream lost"},"未检测到需要安装的依赖（无 package.json / requirements.txt）":{"en":"no dependencies detected"},"打开报表页":{"en":"Open report"},"工程 ":{"en":"project "},"记录在":{"en":"records in"},"目录不存在":{"en":"directory not found"},"不是 git 仓库，或 git 不可用":{"en":"not a git repository, or git is unavailable"},"仅有 package.json（无锁文件）":{"en":"package.json present but no lock file"},"检测到 requirements.txt":{"en":"requirements.txt detected"},"检测到 pnpm-lock.yaml":{"en":"pnpm-lock.yaml detected"},"检测到 yarn.lock":{"en":"yarn.lock detected"},"检测到 bun.lockb":{"en":"bun.lockb detected"},"缺少要执行的步骤":{"en":"no steps to run"},"缺 path":{"en":"missing path"},"job 不存在":{"en":"job not found"},"工程 id 不能为空":{"en":"project id cannot be empty"},"未找到 zenity / kdialog，请在下方手动填入路径":{"en":"zenity / kdialog not found; paste the path below"},"CodeV：被测体 = 登记时指定的目录":{"en":"CodeV: the SUT is the directory chosen at registration"},"没有要执行的步骤":{"en":"no steps to run"},"登记表无法解析":{"en":"registry file cannot be parsed"},"绑定文件无法解析":{"en":"binding file cannot be parsed"},"只有字母或数字开头，其后可含字母数字._-；不得含双点":{"en":"must start with a letter or digit; may then contain letters, digits, . _ -; no double dots"},"登记失败":{"en":"registration failed"},"检测到本地服务正在运行":{"en":"Local server detected"},"打开完整界面":{"en":"Open the full interface"},"在那里可选目录、跑安装、登记工程、实时看进度。":{"en":"There you can pick folders, run setup, register projects and watch live progress."},"复制":{"en":"Copy"},"已复制":{"en":"Copied"},"已选中，按 ⌘C":{"en":"Selected — press ⌘C"},"我已启动，重新检测":{"en":"Started it — re-check"},"检测中…":{"en":"Checking…"},"已找到":{"en":"Found"},"仍未检测到":{"en":"Still not found"},"在任意目录都能跑（命令里已写死绝对路径与工作区）。页面加载时也会自动检测。":{"en":"Runs from any directory (the command carries the absolute path and workspace). The page also detects it on load."},"② 登记工程与运行安装":{"en":"2. Register the project and run setup"},"登记工程、跑安装":{"en":"registering and running setup"},"登记工程":{"en":"registering a project"},"新增工程":{"en":"adding a project"},"读取目录内容":{"en":"reading a folder"},"当前浏览器不支持目录选择（需要 Chrome / Edge 的 File System Access API）。可在下方手动填入路径；点下面的按钮用本地服务读取。":{"en":"This browser has no directory picker (needs the File System Access API). Paste a path below, then read it through the local server."},"再次添加同一目录不会新建工程（监理数据由 data/projects/ 决定）。要打开已有工程，点下面的条目。":{"en":"Adding the same folder again does not create a second project (the data lives in data/projects/). Click an entry below to open it."},"这个目录还不是监理工作区（没有 data/projects/）。登记需要写盘，浏览器做不到。本次采集只读，未改动该目录。":{"en":"This folder is not a supervision workspace yet (no data/projects/). Registering needs disk writes, which a browser cannot do. This scan was read-only; nothing was changed."},"此浏览器不支持目录选择。请用 Chrome / Edge，或用本地服务读取。":{"en":"This browser has no folder picker. Use Chrome / Edge, or read it through the local server."},"六维记分卡":{"en":"Six-dimension scorecard"},"行 = 六维 · 列 = SupV · 条色 = 该维度所处档位 · 字色 = 本次实测 / 继承":{"en":"rows = dimensions · columns = SupV · bar colour = band of that dimension · text colour = measured / inherited"},"列 = SupV（统一版本号）":{"en":"columns = SupV (the managed number)"},"四段含义（三类号共用同一规则）　哪一段进位 = 本次变更的层级：L4「总」→ 第1段，L3「大」→ 第2段，L2「中」→ 第3段，L1「小」→ 第4段；进位后右侧各段清零。所以版本图上黄色「中」道（L2）的每一次前进，都记在第 3 段上。":{"en":"Four segments (one rule for all three)　which segment carries = the change layer: L4 → segment 1, L3 → segment 2, L2 → segment 3, L1 → segment 4; lower segments reset on carry. So every L2 turn shows up in segment 3, matching the amber lane in the version graph."},"所有项目标签都已关闭。点上面的 + 打开或新建工程。":{"en":"All project tabs are closed. Click + above to reopen or create one."},"fitness":{"en":"fitness"},"总":{"en":"Total"},"大":{"en":"Major"},"中":{"en":"Medium"},"小":{"en":"Minor"},"合":{"en":"Merge"},"基线":{"en":"Baseline"},"标杆":{"en":"Exemplary"},"达预期":{"en":"Pass"},"有偏差可控":{"en":"Pass with conditions"},"有偏差":{"en":"Pass with conditions"},"需干预":{"en":"Intervene"},"严重偏离":{"en":"Regress / restart"},"封顶":{"en":"Capped"},"有意权衡":{"en":"trade-off"},"疑似失误":{"en":"possible mistake"},"中性":{"en":"neutral"},"待测":{"en":"pending"},"最优":{"en":"best"},"继承":{"en":"inherited"},"缺失":{"en":"missing"},"达标":{"en":"met"},"已违反":{"en":"violated"},"有风险":{"en":"at risk"},"未知":{"en":"unknown"},"缺口":{"en":"gap"},"工期":{"en":"Schedule"},"预算":{"en":"Budget"},"范围":{"en":"Scope"},"验收":{"en":"Acceptance"},"项目卡":{"en":"Project card"},"版本图":{"en":"Version graph"},"版本矩阵":{"en":"Version matrix"},"同类比较":{"en":"Comparable cohorts"},"得分热力":{"en":"Score matrix"},"趋势":{"en":"trend"},"变更列表":{"en":"Change log"},"详情":{"en":"detail"},"证据与缺口":{"en":"Evidence & gaps"},"停机记录":{"en":"Stopped (compliant)"},"结构树":{"en":"Lineage tree"},"变更意图":{"en":"Change intent"},"来源号":{"en":"Source no."},"当前版本":{"en":"Current version"},"版本数":{"en":"Versions"},"分支数":{"en":"Branches"},"合并点":{"en":"Merge points"},"区间":{"en":"range"},"被门限压制":{"en":"Gated"},"节点明细":{"en":"Node details"},"版本":{"en":"Version"},"父":{"en":"Parents"},"维度":{"en":"Dimension"},"依据":{"en":"Basis"},"置信":{"en":"Conf."},"证据引用":{"en":"Evidence"},"阈值":{"en":"Threshold"},"考核点":{"en":"Checkpoint"},"记录":{"en":"Record"},"侧别":{"en":"Side"},"类别":{"en":"Kind"},"内容":{"en":"Detail"},"档位":{"en":"Band"},"权衡":{"en":"Trade-off"},"可比":{"en":"n"},"领先":{"en":"Lead"},"最佳场合":{"en":"Best fit"},"待补测试":{"en":"To fill in"},"尚未组建":{"en":"not assembled"},"尚未纳管":{"en":"not enrolled"},"已纳管未评分":{"en":"enrolled, not scored"},"已由统一版本号管理":{"en":"managed"},"已记录测试结果":{"en":"result recorded"},"数字":{"en":"number"},"分支":{"en":"branch"},"车道":{"en":"lanes"},"被测体":{"en":"SUT"},"测试集":{"en":"test set"},"被测体侧":{"en":"SUT side"},"测试集侧":{"en":"test-set side"},"变更拆分建议":{"en":"Change-split proposal"},"变更单退回":{"en":"Change order returned"},"口径变更说明":{"en":"Rubric-change notice"},"版本无效":{"en":"Invalid version"},"同配置":{"en":"Same configuration"},"无需回退":{"en":"No rollback needed"},"只报重算集":{"en":"Only R is reported"},"继承维度不出现差值":{"en":"inherited dims show no delta"},"缺口只降置信度":{"en":"Gaps lower confidence"},"不直接扣分":{"en":"not score"},"公理":{"en":"axiom"},"停发":{"en":"Stopping"},"是合规输出":{"en":"is a compliant output"},"不是失败":{"en":"not a failure"},"基线考题":{"en":"baseline suite"},"加目标用例":{"en":"extended suite"},"只让前进":{"en":"advance one source"},"尚未组建（没有对应":{"en":"not assembled (no"},"已在统一版本号管理下、未评分":{"en":"managed, not scored"},"缺证据":{"en":"missing evidence"},"考题由":{"en":"suite grew from"},"本原扩至":{"en":"primitives to"},"本原":{"en":"primitives"},"范围判据趋严":{"en":"scope criteria tightened"},"新子集尚未逐条核验":{"en":"new subsets not yet itemised"},"未提供目标漂移证据":{"en":"no drift evidence provided"},"无变更单对照":{"en":"no change order to compare"},"目标维按未漂移占位":{"en":"goal assumed undrifted"},"考题扩张后达标不确定性上升":{"en":"uncertainty up after suite expansion"},"无独立风险台账":{"en":"no independent risk ledger"},"机会":{"en":"opportunity"}};
+const I18N_LANGS = ["zh","en"];
+const I18N_LABEL = {"zh":"中文","en":"English"};
+const I18N_PATTERNS = [{ re: /^要在浏览器里完成「(.*)」，需要一个本地服务（浏览器不能写盘、没有 shell）。$/, to: (_m, what) => `To do “${EN_HINT[what] || what}” from the browser you need a local server (a browser cannot write to disk and has no shell).` },{ re: /^工程 id 非法：(.*?)（.*）$/, to: (_m, raw) => `invalid project id: ${raw} (must start with a letter or digit; may then contain letters, digits, . _ -; no double dots)` },{ re: /^工程 (.*?) 已存在（(.*?)）—— 重复登记不会创建第二个工程$/, to: (_m, pid) => `project ${pid} already exists — registering again does not create a second one` },{ re: /^暂不支持在 (.*?) 上弹目录选择器，请手动填入路径$/, to: (_m, plat) => `the folder picker is not supported on ${plat}; paste the path instead` },{ re: /^检测到 (.*)$/, to: (_m, what) => `${what} detected` },{ re: /^(.*?) 下没有 data\/projects\/ —— 先在该目录跑 init$/, to: (_m, dir) => `no data/projects/ under ${dir} — run init in that directory first` },{ re: /^绑定文件无法解析：(.*)$/, to: (_m, why) => `binding file cannot be parsed: ${why}` },{ re: /^登记表无法解析：(.*)$/, to: (_m, why) => `registry file cannot be parsed: ${why}` },{ re: /^目录不存在：(.*)$/, to: (_m, d) => `Directory not found: ${d}` },{ re: /^该目录已经是工程工作区（已登记 (\d+) 个工程）$/, to: (_m, n) => `This folder is already a workspace (${n} projects registered)` },{ re: /^测试未全过：(\d+)\/(\d+) 项失败（按通过率 ([\d.]+)% 计入主判据）$/, to: (_m, f, t, r) => `Tests not all green: ${f}/${t} failed (pass rate ${r}% drives the primary criterion)` },{ re: /^范围考核点已违反：(.*)（交付缺口已按 −25 计入 quality）$/, to: (_m, detail) => `Scope checkpoint violated: ${detail} (−25 applied to quality)` },{ re: /^只让\s*CodeV\s*前进$/, to: () => 'advance CodeV only' },{ re: /^只让\s*TestV\s*前进$/, to: () => 'advance TestV only' },{ re: /^SupV\s*(\S+)：CodeV\s*(\S+)\s*×\s*TestV\s*(\S+)$/, to: (m) => `SupV ${m[1]}: CodeV ${m[2]} × TestV ${m[3]}` },{ re: /^相对\s*SupV\s*(\S+)：CodeV\((\S+)→(\S+)\)\s*与\s*TestV\((\S+)→(\S+)\)\s*同时变化\s*⇒\s*Δ\s*无指称对象（原则\s*1）$/, to: (m) => `vs SupV ${m[1]}: CodeV (${m[2]}→${m[3]}) and TestV (${m[4]}→${m[5]}) changed together ⇒ Δ has no referent (principle 1)` },{ re: /^相对\s*(\S+)：被测物\((\S+)→(\S+)\)与测试集\((\S+)→(\S+)\)同时变化\s*⇒\s*Δ\s*无指称对象（原则\s*1）$/, to: (m) => `vs ${m[1]}: SUT (${m[2]}→${m[3]}) and test set (${m[4]}→${m[5]}) changed together ⇒ Δ has no referent (principle 1)` },{ re: /^A\s*=\s*both：被测体侧与测试集侧同时变化，Δ\s*无指称对象（原则\s*1）$/, to: () => 'A = both: the SUT side and the test-set side changed together, so Δ has no referent (principle 1)' },{ re: /^同样的一对来源版本（CodeV\s*(\S+)\s*×\s*TestV\s*(\S+)）已由 SupV\s*(\S+)\s*管理（不占新号）$/, to: (m) => `the same source pair (CodeV ${m[1]} × TestV ${m[2]}) is already managed by SupV ${m[3]} (no new number taken)` },{ re: /^两侧指纹与\s*(\S+)\s*完全相同\s*⇒\s*同一版本，不得占用新版本号（SPEC\s*§4\.1）$/, to: (m) => `fingerprints match ${m[1]} ⇒ same version, no new number may be taken (SPEC §4.1)` },{ re: /^合并结果与\s*(\S+)\s*指纹相同\s*⇒\s*同一版本，不得占新号$/, to: (m) => `merge result matches ${m[1]} fingerprints ⇒ same version, no new number taken` },{ re: /^权重变更\s*(.+?)\s*→\s*(.+?)\s*与父版本\s*(\S+)\s*不一致\s*⇒\s*禁止数值相减（SPEC\s*§10\s*原则\s*4）$/, to: (m) => `weight change ${m[1]} → ${m[2]} differs from parent ${m[3]} ⇒ numeric subtraction forbidden (SPEC §10 principle 4)` },{ re: /^合并点层\s*L(\d)\s*未高于两条父分支的最高层\s*L(\d)（SPEC\s*§4\.3）\s*⇒\s*应在更低层解决，无需合并$/, to: (m) => `merge layer L${m[1]} is not above both parents' top layer L${m[2]} (SPEC §4.3) ⇒ resolve lower, no merge needed` },{ re: /^\[L-1\]\s*违反单调扩张：删除了既有本原\s*(.+?)（SPEC\s*§4\.2\s*\/\s*§1\.3）$/, to: (m) => `[L-1] monotonic expansion violated: existing primitives removed: ${m[1]} (SPEC §4.2 / §1.3)` },{ re: /^\[L-1\]\s*违反不可变本原：既有本原内容被改动\s*(.+?)（SPEC\s*§4\.2\s*\/\s*§1\.3）$/, to: (m) => `[L-1] immutable primitive violated: existing primitive content changed: ${m[1]} (SPEC §4.2 / §1.3)` },{ re: /^尚未组建（没有对应 SupV）$/, to: () => 'not assembled (no SupV yet)' },{ re: /^已在统一版本号管理下、未评分（缺证据）$/, to: () => 'managed by SupV, not scored (missing evidence)' },{ re: /^(口径四项变动：)([\s\S]*)$/, to: (m) => `rubric items changed: ${m[2]}` },{ re: /^权重变更\s*(.+)$/, to: (m) => `weight change ${m[1]}` },{ re: /^两侧指纹与\s*(\S+)\s*完全相同.*$/, to: (m) => `fingerprints match ${m[1]} ⇒ same version` },{ re: /^考题由\s*(\d+)\s*本原扩至\s*(\d+)\s*本原；范围判据趋严$/, to: (m) => `suite grew from ${m[1]} to ${m[2]} primitives; scope criteria tightened` }];
+
+
+const LANGS = ['zh', 'en'];
+
+
+const LANG_LABEL = { zh: '中文', en: 'English' };
+
+
+const DICT = {
+  成本: { en: 'Cost' },
+  质量: { en: 'Quality' },
+  进度: { en: 'Schedule' },
+  目标: { en: 'Goal' },
+  约束: { en: 'Constraint' },
+  风险: { en: 'Risk' },
+  适应度: { en: 'Fitness' },
+  '适应度（fitness）': { en: 'fitness' },
+  '无独立验收判据（测试通过率或产出物逐项核验）；缺验收测试结果 ⇒ 质量维以过程指标代理':
+    { en: 'No independent acceptance criterion (test pass rate or item-by-item deliverable check); no acceptance run recorded ⇒ quality falls back to a process proxy' },
+  '缺产出物清单 ⇒ 范围考核点未取证':
+    { en: 'No deliverables manifest ⇒ the scope checkpoint has no evidence' },
+  '项目未设工期上限 ⇒ 进度维无判据，按满分占位':
+    { en: 'No schedule cap configured ⇒ the schedule dimension has no criterion and is scored full as a placeholder' },
+  '无独立验收判据（测试通过率或产出物逐项核验）；缺产出物清单 ⇒ 范围考核点未取证':
+    { en: 'No independent acceptance criterion (test pass rate or item-by-item deliverable check); no deliverables manifest ⇒ the scope checkpoint has no evidence' },
+  '未提供目标漂移证据（无变更单对照）⇒ 目标维按未漂移占位':
+    { en: 'No goal-drift evidence (no change order to compare) ⇒ the goal dimension is a no-drift placeholder' },
+  '以等待占比作风险代理指标；无独立风险台账（概率×影响）⇒ 本条置信度最低':
+    { en: 'Idle share is used as a risk proxy; no standalone risk ledger (probability × impact) ⇒ lowest confidence here' },
+  '打开已关闭的项目': { en: 'Reopen a closed project' },
+  '新建工程': { en: 'Create a new project' },
+  '打开 / 新建工程': { en: 'Open or create a project' },
+  '关闭该标签': { en: 'Close this tab' },
+  'data/projects 下的项目都已打开': { en: 'Every project under data/projects is already open' },
+  '本页是静态单文件，不能写盘。在项目根目录执行下面两行，再刷新本页：':
+    { en: 'This page is a static file and cannot write to disk. Run these two lines in your project root, then reload:' },
+  '选一个目录，就地采集，形成报表': { en: 'pick a folder, scan it in place, get a report' },
+  '① 选择工程目录': { en: '1. Choose the project folder' },
+  '选定后在浏览器内直接读取该目录（不上传、不联网）：文件与目录计数、测试文件、git 仓库与提交历史。':
+    { en: 'The folder is read locally in your browser (nothing is uploaded): file/folder counts, test files, git repo and commit history.' },
+  '选择工程目录…': { en: 'Choose folder…' },
+  '当前浏览器不支持目录选择（需要 Chrome / Edge 的 File System Access API）。可在下方手动填入路径，读取仍需本地服务模式。':
+    { en: 'This browser has no directory picker (needs the File System Access API). Paste a path below instead; reading it still requires the local server mode.' },
+  '此浏览器不支持目录选择。请用 Chrome / Edge，或改用本地服务模式。':
+    { en: 'This browser has no directory picker. Use Chrome / Edge, or the local server mode.' },
+  '或手动填路径（供本地服务模式使用）': { en: 'or paste a path (used by the local server mode)' },
+  '② 在该目录下运行安装': { en: '2. Run setup inside that folder' },
+  '浏览器没有 shell，跑不了安装命令。这一步需要本地服务模式：':
+    { en: 'A browser has no shell, so it cannot run setup. This step needs the local server mode:' },
+  '服务起来后，本页改走系统文件管理器选目录，并可在该目录下执行 setup 清单、实时显示进度，最后把 git 历史与测试轨迹并入报表。':
+    { en: 'Once running, this page picks folders through the OS file manager, executes the setup manifest with live progress, and folds git history plus test traces into the report.' },
+  '重新打开已关闭的项目': { en: 'Reopen a closed project' },
+  '被测物（CodeV）⧵ 测试集（TestV）': { en: 'SUT (CodeV) ⧵ TESTSET (TestV)' },
+  '已在标签页': { en: 'open as tab' },
+  '不在本页数据里，需重新生成仪表台': { en: "not in this page's data; regenerate the dashboard" },
+  '再次添加同一目录不会新建工程 —— 监理数据由 data/projects/ 决定，而浏览器不能写盘。要打开已有工程，点下面的条目；要新增工程，用本地服务模式。':
+    { en: 'Adding the same folder again does not create a second project: the data lives in data/projects/ and a browser cannot write there. Click an entry to open it; use the local server mode to add a new one.' },
+  '登记为工程': { en: 'Register as a project' },
+  '这个目录还不是监理工作区（没有 data/projects/）。登记需要写盘，浏览器做不到 —— 需要本地服务模式。本次采集只读，未改动该目录。':
+    { en: 'This folder is not a supervision workspace yet (no data/projects/). Registering needs disk writes, which a browser cannot do — use the local server mode. This scan was read-only; nothing was changed.' },
+  '正在采集…': { en: 'Scanning…' },
+  '采集结果': { en: 'Scan result' },
+  '文件': { en: 'files' },
+  '目录': { en: 'folders' },
+  '测试文件': { en: 'test files' },
+  '是': { en: 'yes' },
+  '否': { en: 'no' },
+  '时间': { en: 'Time' },
+  '说明': { en: 'Message' },
+  '历史提交（读自 .git/logs/HEAD，最近 12 条）': { en: 'Commit history (from .git/logs/HEAD, latest 12)' },
+  '该目录不是 git 仓库，或读不到提交记录。': { en: 'Not a git repository, or no commit log readable.' },
+  '级差': { en: 'Grade' },
+  '本车道第': { en: 'lane #' },
+  '个': { en: '' },
+  '(无扩展名)': { en: '(no extension)' },
+  '灰字 = 继承自父版本（未重算；该层级的重算集不含这一维）':
+    { en: 'grey = inherited from the parent version (not recomputed by this layer)' },
+  '彩色粗字 = 本版本实测': { en: 'bold coloured = measured in this version' },
+  '以下维度在所有版本中都是【继承】的（这些层级没有重算它们），故不逐格重复：':
+    { en: 'Inherited in every version (no layer recomputed them), so not repeated per column:' },
+  '本次实测': { en: 'measured in this version' },
+  '继承自父版本（未重算）': { en: 'inherited from the parent version, not recomputed' },
+  '继承自': { en: 'inherited from' },
+  '回退': { en: 'rollback' },
+  '斜线 = 分叉/合并；双圈 = 被门限封顶；↩ = 回退节点（与记分卡的继承无关）':
+    { en: 'diagonal = branch/merge; double ring = gated; ↩ = rollback (unrelated to inheritance)' },
+  '统计不可用：': { en: 'Statistics unavailable: ' },
+  '项目统计（自动采集）': { en: 'Project statistics (collected automatically)' },
+  '规模': { en: 'Scale' },
+  '节奏': { en: 'Cadence' },
+  '近 30 天': { en: 'last 30d' },
+  '近 90 天': { en: 'last 90d' },
+  '测试轨迹': { en: 'Test trail' },
+  '路径含 test / spec': { en: 'paths matching test / spec' },
+  '最新提交': { en: 'Latest commit' },
+  '次提交': { en: 'commits' },
+  '最近': { en: 'latest' },
+  '跨度': { en: 'span' },
+  '天': { en: 'd' },
+  '工程未声明被测目录（project.sut.repo）': { en: 'the project declares no SUT directory (project.sut.repo)' },
+  '尚未立项': { en: 'not baselined yet' },
+  '该工程已登记，统计已自动采集（见上）；评分需要先立基线：':
+    { en: 'Registered; statistics are collected automatically (above). Scoring needs a baseline first:' },
+  '一个按钮：选目录 → 自动采集、纳管、安装 → 打开报表页':
+    { en: 'one button: pick a folder → scan, register, set up → open the report' },
+  '① 选择工程目录并开始…': { en: '1. Choose a folder and start…' },
+  '会弹出系统文件管理器；选定后自动完成采集、登记、安装与报表，无需再点。':
+    { en: 'An OS file manager opens; after you pick, scanning, registration, setup and the report run automatically.' },
+  '或手动填路径': { en: 'or paste a path' },
+  '仅采集（登记前先看看）': { en: 'scan only (peek before registering)' },
+  '等待系统目录选择器…': { en: 'waiting for the folder picker…' },
+  '无法弹出选择器，请用下方「手动填路径」': { en: 'cannot open the picker; use "or paste a path" below' },
+  '采集目录': { en: 'Scan folder' },
+  '登记纳管': { en: 'Register' },
+  '工程 id：': { en: 'project id: ' },
+  '已登记为工程 ': { en: 'registered as ' },
+  '已存在，沿用 ': { en: 'already registered, reusing ' },
+  '该目录已登记为工程 ': { en: 'already registered as ' },
+  '运行安装': { en: 'Run setup' },
+  '安装完成': { en: 'setup finished' },
+  '安装中断': { en: 'setup aborted' },
+  '进度连接中断': { en: 'progress stream lost' },
+  '未检测到需要安装的依赖（无 package.json / requirements.txt）': { en: 'no dependencies detected' },
+  '打开报表页': { en: 'Open report' },
+  '工程 ': { en: 'project ' },
+  '采集目录': { en: 'Scan folder' },
+  '记录在': { en: 'records in' },
+  '目录不存在': { en: 'directory not found' },
+  '不是 git 仓库，或 git 不可用': { en: 'not a git repository, or git is unavailable' },
+  '仅有 package.json（无锁文件）': { en: 'package.json present but no lock file' },
+  '检测到 requirements.txt': { en: 'requirements.txt detected' },
+  '检测到 pnpm-lock.yaml': { en: 'pnpm-lock.yaml detected' },
+  '检测到 yarn.lock': { en: 'yarn.lock detected' },
+  '检测到 bun.lockb': { en: 'bun.lockb detected' },
+  '缺少要执行的步骤': { en: 'no steps to run' },
+  '缺 path': { en: 'missing path' },
+  'job 不存在': { en: 'job not found' },
+  '工程 id 不能为空': { en: 'project id cannot be empty' },
+  '未找到 zenity / kdialog，请在下方手动填入路径': { en: 'zenity / kdialog not found; paste the path below' },
+  'CodeV：被测体 = 登记时指定的目录': { en: 'CodeV: the SUT is the directory chosen at registration' },
+  '没有要执行的步骤': { en: 'no steps to run' },
+  '登记表无法解析': { en: 'registry file cannot be parsed' },
+  '绑定文件无法解析': { en: 'binding file cannot be parsed' },
+  '只有字母或数字开头，其后可含字母数字._-；不得含双点': { en: 'must start with a letter or digit; may then contain letters, digits, . _ -; no double dots' },
+  '登记失败': { en: 'registration failed' },
+  '检测到本地服务正在运行': { en: 'Local server detected' },
+  '打开完整界面': { en: 'Open the full interface' },
+  '在那里可选目录、跑安装、登记工程、实时看进度。': { en: 'There you can pick folders, run setup, register projects and watch live progress.' },
+  '复制': { en: 'Copy' },
+  '已复制': { en: 'Copied' },
+  '已选中，按 ⌘C': { en: 'Selected — press ⌘C' },
+  '我已启动，重新检测': { en: 'Started it — re-check' },
+  '检测中…': { en: 'Checking…' },
+  '已找到': { en: 'Found' },
+  '仍未检测到': { en: 'Still not found' },
+  '在任意目录都能跑（命令里已写死绝对路径与工作区）。页面加载时也会自动检测。':
+    { en: 'Runs from any directory (the command carries the absolute path and workspace). The page also detects it on load.' },
+  '② 登记工程与运行安装': { en: '2. Register the project and run setup' },
+  '登记工程、跑安装': { en: 'registering and running setup' },
+  '登记工程': { en: 'registering a project' },
+  '新增工程': { en: 'adding a project' },
+  '读取目录内容': { en: 'reading a folder' },
+  '或手动填路径': { en: 'or paste a path' },
+  '当前浏览器不支持目录选择（需要 Chrome / Edge 的 File System Access API）。可在下方手动填入路径；点下面的按钮用本地服务读取。':
+    { en: 'This browser has no directory picker (needs the File System Access API). Paste a path below, then read it through the local server.' },
+  '再次添加同一目录不会新建工程（监理数据由 data/projects/ 决定）。要打开已有工程，点下面的条目。':
+    { en: 'Adding the same folder again does not create a second project (the data lives in data/projects/). Click an entry below to open it.' },
+  '这个目录还不是监理工作区（没有 data/projects/）。登记需要写盘，浏览器做不到。本次采集只读，未改动该目录。':
+    { en: 'This folder is not a supervision workspace yet (no data/projects/). Registering needs disk writes, which a browser cannot do. This scan was read-only; nothing was changed.' },
+  '此浏览器不支持目录选择。请用 Chrome / Edge，或用本地服务读取。':
+    { en: 'This browser has no folder picker. Use Chrome / Edge, or read it through the local server.' },
+  '六维记分卡': { en: 'Six-dimension scorecard' },
+  '行 = 六维 · 列 = SupV · 条色 = 该维度所处档位 · 字色 = 本次实测 / 继承':
+    { en: 'rows = dimensions · columns = SupV · bar colour = band of that dimension · text colour = measured / inherited' },
+  '列 = SupV（统一版本号）': { en: 'columns = SupV (the managed number)' },
+  '四段含义（三类号共用同一规则）　哪一段进位 = 本次变更的层级：L4「总」→ 第1段，L3「大」→ 第2段，L2「中」→ 第3段，L1「小」→ 第4段；进位后右侧各段清零。所以版本图上黄色「中」道（L2）的每一次前进，都记在第 3 段上。':
+    { en: 'Four segments (one rule for all three)　which segment carries = the change layer: L4 → segment 1, L3 → segment 2, L2 → segment 3, L1 → segment 4; lower segments reset on carry. So every L2 turn shows up in segment 3, matching the amber lane in the version graph.' },
+  '所有项目标签都已关闭。点上面的 + 打开或新建工程。':
+    { en: 'All project tabs are closed. Click + above to reopen or create one.' },
+  fitness: { en: 'fitness' },
+
+  总: { en: 'Total' },
+  大: { en: 'Major' },
+  中: { en: 'Medium' },
+  小: { en: 'Minor' },
+  合: { en: 'Merge' },
+  基线: { en: 'Baseline' },
+
+  标杆: { en: 'Exemplary' },
+  达预期: { en: 'Pass' },
+  有偏差可控: { en: 'Pass with conditions' },
+  有偏差: { en: 'Pass with conditions' },
+  需干预: { en: 'Intervene' },
+  严重偏离: { en: 'Regress / restart' },
+  封顶: { en: 'Capped' },
+
+  有意权衡: { en: 'trade-off' },
+  疑似失误: { en: 'possible mistake' },
+  中性: { en: 'neutral' },
+
+  待测: { en: 'pending' },
+  最优: { en: 'best' },
+  继承: { en: 'inherited' },
+  缺失: { en: 'missing' },
+  达标: { en: 'met' },
+  已违反: { en: 'violated' },
+  有风险: { en: 'at risk' },
+  未知: { en: 'unknown' },
+  缺口: { en: 'gap' },
+
+  工期: { en: 'Schedule' },
+  预算: { en: 'Budget' },
+  范围: { en: 'Scope' },
+  验收: { en: 'Acceptance' },
+
+  项目卡: { en: 'Project card' },
+  版本图: { en: 'Version graph' },
+  版本矩阵: { en: 'Version matrix' },
+  同类比较: { en: 'Comparable cohorts' },
+  得分热力: { en: 'Score matrix' },
+  趋势: { en: 'trend' },
+  变更列表: { en: 'Change log' },
+  详情: { en: 'detail' },
+  证据与缺口: { en: 'Evidence & gaps' },
+  停机记录: { en: 'Stopped (compliant)' },
+  结构树: { en: 'Lineage tree' },
+  变更意图: { en: 'Change intent' },
+  来源号: { en: 'Source no.' },
+  当前版本: { en: 'Current version' },
+  版本数: { en: 'Versions' },
+  分支数: { en: 'Branches' },
+  合并点: { en: 'Merge points' },
+  区间: { en: 'range' },
+  被门限压制: { en: 'Gated' },
+  节点明细: { en: 'Node details' },
+  版本: { en: 'Version' },
+  父: { en: 'Parents' },
+  维度: { en: 'Dimension' },
+  依据: { en: 'Basis' },
+  置信: { en: 'Conf.' },
+  证据引用: { en: 'Evidence' },
+  阈值: { en: 'Threshold' },
+  考核点: { en: 'Checkpoint' },
+  记录: { en: 'Record' },
+  侧别: { en: 'Side' },
+  类别: { en: 'Kind' },
+  内容: { en: 'Detail' },
+  档位: { en: 'Band' },
+  权衡: { en: 'Trade-off' },
+  可比: { en: 'n' },
+  领先: { en: 'Lead' },
+  跨度: { en: 'Spread' },
+  最佳场合: { en: 'Best fit' },
+  待补测试: { en: 'To fill in' },
+  尚未组建: { en: 'not assembled' },
+  尚未纳管: { en: 'not enrolled' },
+  已纳管未评分: { en: 'enrolled, not scored' },
+  已由统一版本号管理: { en: 'managed' },
+  已记录测试结果: { en: 'result recorded' },
+  数字: { en: 'number' },
+  分支: { en: 'branch' },
+  车道: { en: 'lanes' },
+  被测体: { en: 'SUT' },
+  测试集: { en: 'test set' },
+  被测体侧: { en: 'SUT side' },
+  测试集侧: { en: 'test-set side' },
+  '变更拆分建议': { en: 'Change-split proposal' },
+  '变更单退回': { en: 'Change order returned' },
+  '口径变更说明': { en: 'Rubric-change notice' },
+  '版本无效': { en: 'Invalid version' },
+  '同配置': { en: 'Same configuration' },
+  '无需回退': { en: 'No rollback needed' },
+  '只报重算集': { en: 'Only R is reported' },
+  '继承维度不出现差值': { en: 'inherited dims show no delta' },
+  '缺口只降置信度': { en: 'Gaps lower confidence' },
+  '不直接扣分': { en: 'not score' },
+  '公理': { en: 'axiom' },
+  '停发': { en: 'Stopping' },
+  '是合规输出': { en: 'is a compliant output' },
+  '不是失败': { en: 'not a failure' },
+
+  基线考题: { en: 'baseline suite' },
+  加目标用例: { en: 'extended suite' },
+  只让前进: { en: 'advance one source' },
+  '尚未组建（没有对应': { en: 'not assembled (no' },
+  '已在统一版本号管理下、未评分': { en: 'managed, not scored' },
+  缺证据: { en: 'missing evidence' },
+  考题由: { en: 'suite grew from' },
+  本原扩至: { en: 'primitives to' },
+  本原: { en: 'primitives' },
+  范围判据趋严: { en: 'scope criteria tightened' },
+  新子集尚未逐条核验: { en: 'new subsets not yet itemised' },
+  未提供目标漂移证据: { en: 'no drift evidence provided' },
+  无变更单对照: { en: 'no change order to compare' },
+  目标维按未漂移占位: { en: 'goal assumed undrifted' },
+  考题扩张后达标不确定性上升: { en: 'uncertainty up after suite expansion' },
+  无独立风险台账: { en: 'no independent risk ledger' },
+  机会: { en: 'opportunity' },
+};
+
+
+const PATTERNS = [
+  { re: /^要在浏览器里完成「(.*)」，需要一个本地服务（浏览器不能写盘、没有 shell）。$/,
+    to: (_m, what) => `To do “${EN_HINT[what] || what}” from the browser you need a local server (a browser cannot write to disk and has no shell).` },
+  { re: /^工程 id 非法：(.*?)（.*）$/, to: (_m, raw) => `invalid project id: ${raw} (must start with a letter or digit; may then contain letters, digits, . _ -; no double dots)` },
+  { re: /^工程 (.*?) 已存在（(.*?)）—— 重复登记不会创建第二个工程$/, to: (_m, pid) => `project ${pid} already exists — registering again does not create a second one` },
+  { re: /^暂不支持在 (.*?) 上弹目录选择器，请手动填入路径$/, to: (_m, plat) => `the folder picker is not supported on ${plat}; paste the path instead` },
+  { re: /^检测到 (.*)$/, to: (_m, what) => `${what} detected` },
+  { re: /^(.*?) 下没有 data\/projects\/ —— 先在该目录跑 init$/, to: (_m, dir) => `no data/projects/ under ${dir} — run init in that directory first` },
+  { re: /^绑定文件无法解析：(.*)$/, to: (_m, why) => `binding file cannot be parsed: ${why}` },
+  { re: /^登记表无法解析：(.*)$/, to: (_m, why) => `registry file cannot be parsed: ${why}` },
+  { re: /^目录不存在：(.*)$/, to: (_m, d) => `Directory not found: ${d}` },
+  { re: /^该目录已经是工程工作区（已登记 (\d+) 个工程）$/,
+    to: (_m, n) => `This folder is already a workspace (${n} projects registered)` },
+  { re: /^测试未全过：(\d+)\/(\d+) 项失败（按通过率 ([\d.]+)% 计入主判据）$/,
+    to: (_m, f, t, r) => `Tests not all green: ${f}/${t} failed (pass rate ${r}% drives the primary criterion)` },
+  { re: /^范围考核点已违反：(.*)（交付缺口已按 −25 计入 quality）$/,
+    to: (_m, detail) => `Scope checkpoint violated: ${detail} (−25 applied to quality)` },
+  { re: /^只让\s*CodeV\s*前进$/, to: () => 'advance CodeV only' },
+  { re: /^只让\s*TestV\s*前进$/, to: () => 'advance TestV only' },
+  { re: /^SupV\s*(\S+)：CodeV\s*(\S+)\s*×\s*TestV\s*(\S+)$/, to: (m) => `SupV ${m[1]}: CodeV ${m[2]} × TestV ${m[3]}` },
+
+  { re: /^相对\s*SupV\s*(\S+)：CodeV\((\S+)→(\S+)\)\s*与\s*TestV\((\S+)→(\S+)\)\s*同时变化\s*⇒\s*Δ\s*无指称对象（原则\s*1）$/,
+    to: (m) => `vs SupV ${m[1]}: CodeV (${m[2]}→${m[3]}) and TestV (${m[4]}→${m[5]}) changed together ⇒ Δ has no referent (principle 1)` },
+  { re: /^相对\s*(\S+)：被测物\((\S+)→(\S+)\)与测试集\((\S+)→(\S+)\)同时变化\s*⇒\s*Δ\s*无指称对象（原则\s*1）$/,
+    to: (m) => `vs ${m[1]}: SUT (${m[2]}→${m[3]}) and test set (${m[4]}→${m[5]}) changed together ⇒ Δ has no referent (principle 1)` },
+  { re: /^A\s*=\s*both：被测体侧与测试集侧同时变化，Δ\s*无指称对象（原则\s*1）$/,
+    to: () => 'A = both: the SUT side and the test-set side changed together, so Δ has no referent (principle 1)' },
+
+  { re: /^同样的一对来源版本（CodeV\s*(\S+)\s*×\s*TestV\s*(\S+)）已由 SupV\s*(\S+)\s*管理（不占新号）$/,
+    to: (m) => `the same source pair (CodeV ${m[1]} × TestV ${m[2]}) is already managed by SupV ${m[3]} (no new number taken)` },
+  { re: /^两侧指纹与\s*(\S+)\s*完全相同\s*⇒\s*同一版本，不得占用新版本号（SPEC\s*§4\.1）$/,
+    to: (m) => `fingerprints match ${m[1]} ⇒ same version, no new number may be taken (SPEC §4.1)` },
+  { re: /^合并结果与\s*(\S+)\s*指纹相同\s*⇒\s*同一版本，不得占新号$/,
+    to: (m) => `merge result matches ${m[1]} fingerprints ⇒ same version, no new number taken` },
+
+  { re: /^权重变更\s*(.+?)\s*→\s*(.+?)\s*与父版本\s*(\S+)\s*不一致\s*⇒\s*禁止数值相减（SPEC\s*§10\s*原则\s*4）$/,
+    to: (m) => `weight change ${m[1]} → ${m[2]} differs from parent ${m[3]} ⇒ numeric subtraction forbidden (SPEC §10 principle 4)` },
+
+  { re: /^合并点层\s*L(\d)\s*未高于两条父分支的最高层\s*L(\d)（SPEC\s*§4\.3）\s*⇒\s*应在更低层解决，无需合并$/,
+    to: (m) => `merge layer L${m[1]} is not above both parents' top layer L${m[2]} (SPEC §4.3) ⇒ resolve lower, no merge needed` },
+
+  { re: /^\[L-1\]\s*违反单调扩张：删除了既有本原\s*(.+?)（SPEC\s*§4\.2\s*\/\s*§1\.3）$/,
+    to: (m) => `[L-1] monotonic expansion violated: existing primitives removed: ${m[1]} (SPEC §4.2 / §1.3)` },
+  { re: /^\[L-1\]\s*违反不可变本原：既有本原内容被改动\s*(.+?)（SPEC\s*§4\.2\s*\/\s*§1\.3）$/,
+    to: (m) => `[L-1] immutable primitive violated: existing primitive content changed: ${m[1]} (SPEC §4.2 / §1.3)` },
+
+  { re: /^尚未组建（没有对应 SupV）$/, to: () => 'not assembled (no SupV yet)' },
+  { re: /^已在统一版本号管理下、未评分（缺证据）$/, to: () => 'managed by SupV, not scored (missing evidence)' },
+
+  { re: /^(口径四项变动：)([\s\S]*)$/, to: (m) => `rubric items changed: ${m[2]}` },
+  { re: /^权重变更\s*(.+)$/, to: (m) => `weight change ${m[1]}` },
+  { re: /^两侧指纹与\s*(\S+)\s*完全相同.*$/, to: (m) => `fingerprints match ${m[1]} ⇒ same version` },
+
+  { re: /^考题由\s*(\d+)\s*本原扩至\s*(\d+)\s*本原；范围判据趋严$/, to: (m) => `suite grew from ${m[1]} to ${m[2]} primitives; scope criteria tightened` },
+];
+
+
+function tr(text, lang = 'zh') {
+  if (lang === 'zh' || lang == null) return text;
+  const s = String(text ?? '');
+  if (!s) return s;
+  const hit = DICT[s];
+  if (hit && hit[lang]) return hit[lang];
+  for (const p of PATTERNS) {
+    const m = s.match(p.re);
+    if (m) return p.to(m);
+  }
+  return s;   // 未收录：原样返回（宁可显中文，也不要机器翻译出歧义）
+}
+
+
+function trAll(list, lang) {
+  if (Array.isArray(list)) return list.map((x) => tr(x, lang));
+  if (list && typeof list === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(list)) out[k] = typeof v === 'string' ? tr(v, lang) : v;
+    return out;
+  }
+  return list;
+}
+
+
+function i18nMisses(texts, lang = 'en') {
+  const miss = [];
+  for (const t of texts) {
+    const s = String(t ?? '').trim();
+    if (!s) continue;
+    if (!/[\u4e00-\u9fa5]/.test(s)) continue;      // 无中文，无需翻译
+    if (tr(s, lang) === s) miss.push(s);
+  }
+  return [...new Set(miss)];
+}
+
+
+const dictSize = () => Object.keys(DICT).length;
+
+</script>
+<script>
+/* ── 以下三个函数内联自 lib/graph.mjs（零依赖纯函数，单一实现）── */
+
+
+function escapeXml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+
+function layoutGraph(graphData, opts) {
+  const o = opts == null ? {} : opts;
+  const src = graphData == null ? {} : graphData;
+  const rawNodes = Array.isArray(src.nodes) ? src.nodes : [];
+  const rawLanes = Array.isArray(src.lanes) ? src.lanes : [];
+
+  const rowH = typeof o.rowH === 'number' && o.rowH > 0 ? o.rowH : 30;
+  const baseLaneW = typeof o.laneW === 'number' && o.laneW > 0 ? o.laneW : 22;
+  const pd = o.padding;
+  const pad = typeof pd === 'number' && pd >= 0
+    ? { l: pd, r: pd, t: pd, b: pd }
+    : {
+      l: pd && typeof pd.l === 'number' && pd.l >= 0 ? pd.l : 14,
+      r: pd && typeof pd.r === 'number' && pd.r >= 0 ? pd.r : 14,
+      t: pd && typeof pd.t === 'number' && pd.t >= 0 ? pd.t : 10,
+      b: pd && typeof pd.b === 'number' && pd.b >= 0 ? pd.b : 10,
+    };
+  const showLabels = o.showLabels !== false;
+  const labelH = showLabels ? 16 : 0;
+  const reserveRight = typeof o.reserveRight === 'number' && o.reserveRight > 0
+    ? o.reserveRight
+    : (showLabels ? 12 : 0);
+  const r2 = (v) => Math.round(v * 100) / 100;
+
+  if (!rawNodes.length) {
+    return {
+      width: r2(pad.l + pad.r), height: r2(pad.t + pad.b), rowH, laneW: baseLaneW,
+      padding: pad, labelH: 0, reserveRight, laneCount: 0,
+      rows: [], lines: [], merges: [], lanes: [],
+    };
+  }
+
+  const laneByBranch = new Map();
+  for (let i = 0; i < rawLanes.length; i++) {
+    const L = rawLanes[i];
+    if (L && typeof L.id === 'string' && typeof L.lane === 'number' && !laneByBranch.has(L.id)) {
+      laneByBranch.set(L.id, L.lane);
+    }
+  }
+  const laneOfNode = [];
+  let maxLane = 0;
+  for (let i = 0; i < rawNodes.length; i++) {
+    const n = rawNodes[i] == null ? {} : rawNodes[i];
+    let lane = 0;
+    if (typeof n.lane === 'number' && n.lane >= 0) lane = n.lane;
+    else if (n.branch != null && laneByBranch.has(String(n.branch))) lane = laneByBranch.get(String(n.branch));
+    laneOfNode.push(lane);
+    if (lane > maxLane) maxLane = lane;
+  }
+
+  const laneColor = new Map();
+  const laneText = new Map();
+  for (let i = 0; i < rawLanes.length; i++) {
+    const L = rawLanes[i];
+    if (!L || typeof L.lane !== 'number') continue;
+    if (!laneColor.has(L.lane) && typeof L.color === 'string' && L.color) laneColor.set(L.lane, L.color);
+    if (!laneText.has(L.lane)) {
+      const t = typeof L.id === 'string' && L.id ? L.id : (typeof L.M === 'string' ? L.M : '');
+      if (t) laneText.set(L.lane, t);
+    }
+  }
+  for (let i = 0; i < rawNodes.length; i++) {
+    const n = rawNodes[i] == null ? {} : rawNodes[i];
+    const lane = laneOfNode[i];
+    if (!laneColor.has(lane) && typeof n.color === 'string' && n.color) laneColor.set(lane, n.color);
+    if (!laneText.has(lane) && n.branch != null && String(n.branch)) laneText.set(lane, String(n.branch));
+  }
+
+  let laneW = baseLaneW;
+  const naturalWidth = pad.l + pad.r + maxLane * laneW + reserveRight;
+  if (typeof o.maxWidth === 'number' && o.maxWidth > 0 && maxLane > 0 && naturalWidth > o.maxWidth) {
+    const avail = o.maxWidth - pad.l - pad.r - reserveRight;
+    const scaled = avail / maxLane;
+    laneW = scaled < 8 ? 8 : (scaled > baseLaneW ? baseLaneW : scaled);
+  }
+
+  const top = pad.t + labelH;
+  const rows = [];
+  const rowById = new Map();
+  for (let i = 0; i < rawNodes.length; i++) {
+    const n = rawNodes[i] == null ? {} : rawNodes[i];
+    const id = String(n.id);
+    const lane = laneOfNode[i];
+    const row = {
+      id, row: i, lane,
+      x: r2(pad.l + lane * laneW),
+      y: r2(top + i * rowH + rowH / 2),
+      node: n,
+    };
+    rows.push(row);
+    if (!rowById.has(id)) rowById.set(id, row);   // 同 id 重复时取最上一行（确定性）
+  }
+
+  const joinOffset = rowH / 2;                    // 斜线切入点：子节点上方半行
+  const spans = new Map();                        // lane → [{ y1, y2, kind, color }]
+  const diagonals = [];
+  const merges = [];
+  const pushSpan = (lane, y1, y2, kind, color) => {
+    if (!(y2 > y1)) return;                       // 零长度竖线不画
+    if (!spans.has(lane)) spans.set(lane, []);
+    spans.get(lane).push({ y1, y2, kind, color });
+  };
+  for (let i = 0; i < rows.length; i++) {
+    const child = rows[i];
+    const n = child.node;
+    const parents = Array.isArray(n.parents) ? n.parents : [];
+    const isMergeNode = n.isMerge === true || parents.length >= 2;
+    const childColor = typeof n.color === 'string' && n.color
+      ? n.color
+      : (laneColor.get(child.lane) || '#6b7280');
+    const parentInfo = [];
+    for (let j = 0; j < parents.length; j++) {
+      const p = rowById.get(String(parents[j]));
+      if (!p) continue;                           // 父节点不在本图（更早历史）：跳过该边
+      parentInfo.push({ id: p.id, lane: p.lane, x: p.x, y: p.y });
+      if (p.lane === child.lane) {
+        pushSpan(child.lane, Math.min(p.y, child.y), Math.max(p.y, child.y), 'straight', childColor);
+      } else {
+        const kind = isMergeNode ? 'merge' : 'branch';
+        let joinY = child.y - joinOffset;
+        if (joinY < p.y) joinY = p.y > child.y ? child.y : p.y;
+        if (joinY > child.y) joinY = child.y;
+        pushSpan(p.lane, Math.min(p.y, joinY), Math.max(p.y, joinY), kind, laneColor.get(p.lane) || childColor);
+        diagonals.push({
+          x1: p.x, y1: r2(joinY), x2: child.x, y2: child.y,
+          color: childColor, lane: child.lane, kind,
+        });
+      }
+    }
+    if (isMergeNode) {
+      merges.push({
+        id: child.id, row: child.row, lane: child.lane, x: child.x, y: child.y,
+        color: childColor, parents: parentInfo,
+      });
+    }
+  }
+
+  const lines = [];
+  const emitRun = (run, lane) => {
+    const kind = run.kinds.has('straight')
+      ? 'straight'
+      : (run.kinds.has('branch') ? 'branch' : 'merge');
+    const x = r2(pad.l + lane * laneW);
+    return {
+      x1: x, y1: r2(run.y1), x2: x, y2: r2(run.y2),
+      color: laneColor.get(lane) || run.color || '#6b7280',
+      lane, kind,
+    };
+  };
+  const laneIds = Array.from(spans.keys()).sort((a, b) => a - b);
+  for (let li = 0; li < laneIds.length; li++) {
+    const lane = laneIds[li];
+    const list = spans.get(lane).slice().sort((a, b) => (a.y1 - b.y1) || (a.y2 - b.y2));
+    let cur = null;
+    for (let k = 0; k < list.length; k++) {
+      const s = list[k];
+      if (cur && s.y1 <= cur.y2 + 0.001) {        // 相接或重叠 → 并入同一段（不留断点）
+        if (s.y2 > cur.y2) cur.y2 = s.y2;
+        cur.kinds.add(s.kind);
+      } else {
+        if (cur) lines.push(emitRun(cur, lane));
+        cur = { y1: s.y1, y2: s.y2, kinds: new Set([s.kind]), color: s.color };
+      }
+    }
+    if (cur) lines.push(emitRun(cur, lane));
+  }
+  for (let i = 0; i < diagonals.length; i++) {    // 斜线后画，压在竖线之上
+    const d = diagonals[i];
+    lines.push({
+      x1: r2(d.x1), y1: r2(d.y1), x2: r2(d.x2), y2: r2(d.y2),
+      color: d.color, lane: d.lane, kind: d.kind,
+    });
+  }
+
+  const laneList = [];
+  for (let l = 0; l <= maxLane; l++) {
+    const text = laneText.get(l) || '';
+    laneList.push({
+      id: text || ('L' + l), lane: l,
+      x: r2(pad.l + l * laneW), labelY: r2(pad.t + 11),
+      color: laneColor.get(l) || '#6b7280', text,
+    });
+  }
+
+  return {
+    width: r2(pad.l + pad.r + maxLane * laneW + reserveRight),
+    height: r2(top + rows.length * rowH + pad.b),
+    rowH, laneW: r2(laneW), padding: pad, labelH, reserveRight, laneCount: maxLane + 1,
+    rows, lines, merges, lanes: laneList,
+  };
+}
+
+
+function renderGraphSvg(graphData, opts) {
+  const o = opts == null ? {} : opts;
+  const esc = typeof escapeXml === 'function'
+    ? escapeXml
+    : function (v) {
+      return String(v == null ? '' : v)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    };
+  const showLabels = o.showLabels !== false;
+  const showNodeIds = o.showNodeIds === true;
+  const lay = layoutGraph(graphData, {
+    rowH: o.rowH,
+    laneW: o.laneW,
+    padding: o.padding,
+    showLabels: o.showLabels,
+    maxWidth: o.maxWidth,
+    reserveRight: typeof o.reserveRight === 'number' && o.reserveRight > 0
+      ? o.reserveRight
+      : (showNodeIds ? 52 : (showLabels ? 12 : 0)),
+  });
+  const font = typeof o.fontFamily === 'string' && o.fontFamily
+    ? o.fontFamily
+    : "-apple-system, 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif";
+  const n2 = (v) => Math.round(v * 100) / 100;
+  const aria = '版本树：' + lay.rows.length + ' 个版本 · ' + lay.laneCount + ' 条车道 · ' + lay.merges.length + ' 个合并点';
+  const parts = [];
+  parts.push(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + n2(lay.width) + ' ' + n2(lay.height)
+    + '" width="' + n2(lay.width) + '" height="' + n2(lay.height) + '" role="img" aria-label="'
+    + esc(aria) + '" font-family="' + esc(font) + '">',
+  );
+
+  for (let i = 0; i < lay.lines.length; i++) {
+    const L = lay.lines[i];
+    parts.push(
+      '<line x1="' + n2(L.x1) + '" y1="' + n2(L.y1) + '" x2="' + n2(L.x2) + '" y2="' + n2(L.y2)
+      + '" stroke="' + esc(L.color) + '" stroke-width="' + (L.kind === 'straight' ? 1.6 : 1.4)
+      + '" stroke-linecap="round" opacity="0.9" data-kind="' + esc(L.kind) + '"/>',
+    );
+  }
+
+  for (let i = 0; i < lay.rows.length; i++) {
+    const r = lay.rows[i];
+    const n = r.node || {};
+    const color = typeof n.color === 'string' && n.color ? n.color : '#6b7280';
+    const bits = [r.id];
+    if (n.branch != null && n.branch !== '') bits.push('分支 ' + n.branch);
+    if (typeof n.fitness === 'number') bits.push('fitness ' + n.fitness);
+    if (n.cap != null) bits.push('cap ' + n.cap + (n.gate ? ' · ' + n.gate : ''));
+    if (n.rollbackFrom) bits.push('回退自 ' + n.rollbackFrom);
+    if (n.note) bits.push(String(n.note));
+    const g = [];
+    g.push('<title>' + esc(bits.join(' · ')) + '</title>');
+    if (n.cap != null) {
+      const dash = n.gate === 'infeasible' ? ' stroke-dasharray="2.5 2.5"' : '';
+      g.push(
+        '<circle cx="' + n2(r.x) + '" cy="' + n2(r.y) + '" r="7.5" fill="none" stroke="#c62828"'
+        + ' stroke-width="1.2"' + dash + '/>',
+      );
+    }
+    g.push(
+      '<circle cx="' + n2(r.x) + '" cy="' + n2(r.y) + '" r="4.5" fill="' + esc(color)
+      + '" stroke="#ffffff" stroke-width="1.2"/>',
+    );
+    if (n.rollbackFrom) {
+      g.push(
+        '<text x="' + n2(r.x + 6) + '" y="' + n2(r.y - 5) + '" font-size="10" fill="' + esc(color)
+        + '" opacity="0.9">↩</text>',
+      );
+    }
+    if (showNodeIds) {
+      g.push(
+        '<text x="' + n2(r.x + 8) + '" y="' + n2(r.y + 3.5) + '" font-size="9" fill="#3f3f46"'
+        + ' opacity="0.9">' + esc(r.id) + '</text>',
+      );
+    }
+    parts.push(
+      '<g class="ps-node" data-id="' + esc(r.id) + '"'
+      + (n.isMerge === true ? ' data-merge="true"' : '') + '>' + g.join('') + '</g>',
+    );
+  }
+
+  if (showLabels) {
+    for (let i = 0; i < lay.lanes.length; i++) {
+      const L = lay.lanes[i];
+      if (!L.text) continue;
+      parts.push(
+        '<text x="' + n2(L.x) + '" y="' + n2(L.labelY) + '" font-size="11" fill="' + esc(L.color)
+        + '" opacity="0.75" text-anchor="middle">' + esc(L.text) + '</text>',
+      );
+    }
+  }
+
+  parts.push('</svg>');
+  return parts.join('');
+}
+
+
+function graphStats(graphData) {
+  const src = graphData == null ? {} : graphData;
+  const nodes = Array.isArray(src.nodes) ? src.nodes : [];
+  const lanes = Array.isArray(src.lanes) ? src.lanes : [];
+  const branchKeys = new Set();
+  let merges = 0;
+  let gatedCount = 0;
+  let maxFitness = null;
+  let minFitness = null;
+  for (let i = 0; i < nodes.length; i++) {
+    const n = nodes[i] == null ? {} : nodes[i];
+    const parents = Array.isArray(n.parents) ? n.parents : [];
+    if (n.isMerge === true || parents.length >= 2) merges++;
+    if (n.gate != null && n.gate !== '') gatedCount++;
+    if (typeof n.fitness === 'number' && Number.isFinite(n.fitness)) {
+      if (maxFitness == null || n.fitness > maxFitness) maxFitness = n.fitness;
+      if (minFitness == null || n.fitness < minFitness) minFitness = n.fitness;
+    }
+    branchKeys.add(
+      n.branch != null && n.branch !== ''
+        ? 'b:' + String(n.branch)
+        : 'lane:' + (typeof n.lane === 'number' ? n.lane : 0),
+    );
+  }
+  return {
+    versions: nodes.length,
+    branches: lanes.length > 0 ? lanes.length : branchKeys.size,
+    merges, maxFitness, minFitness, gatedCount,
+  };
+}
+
+</script>
+<script>
+/* ── 标签页状态机内联自 lib/tabs.mjs（零依赖纯函数；Node 侧单测同一份实现）── */
+
+
+const ADD_TAB = '+';
+
+
+const TAB_STATE_VERSION = 1;
+
+
+function pidList(projects) {
+  return (projects || []).map((p) => (typeof p === 'string' ? p : (p && p.pid) || null)).filter(Boolean);
+}
+
+
+function normalizeTabs(all, pref) {
+  const allPids = pidList(all);
+  if (!pref || !Array.isArray(pref.open)) {
+    return { open: allPids.slice(), active: allPids[0] ?? null, known: allPids.slice(), version: TAB_STATE_VERSION };
+  }
+  const known = Array.isArray(pref.known) ? pref.known : [];
+  const seen = new Set();
+  const open = [];
+  for (const pid of pref.open) {
+    if (!allPids.includes(pid) || seen.has(pid)) continue;   // 规则 2 + 去重
+    seen.add(pid);
+    open.push(pid);
+  }
+  for (const pid of allPids) {                                // 规则 3：新增项目自动打开
+    if (seen.has(pid) || known.includes(pid)) continue;
+    seen.add(pid);
+    open.push(pid);
+  }
+  const active = pref.active === ADD_TAB ? ADD_TAB
+    : (open.includes(pref.active) ? pref.active : (open[0] ?? null));
+  return { open, active, known: allPids.slice(), version: TAB_STATE_VERSION };
+}
+
+
+function activate(state, pid) {
+  if (pid === ADD_TAB) return { ...state, active: ADD_TAB };
+  if (!state.open.includes(pid)) return { ...state, open: state.open.concat(pid), active: pid };
+  return { ...state, active: pid };
+}
+
+
+function closeTab(state, pid) {
+  const i = state.open.indexOf(pid);
+  if (i < 0) return state;
+  const open = state.open.filter((x) => x !== pid);
+  let active = state.active;
+  if (active === pid) active = open[i] ?? open[i - 1] ?? null;
+  return { ...state, open, active };
+}
+
+
+function openTab(state, pid) {
+  return activate(state, pid);
+}
+
+
+const isAddPage = (state) => state.active === ADD_TAB;
+
+
+function hiddenProjects(all, state) {
+  const open = new Set(state.open);
+  return pidList(all).filter((p) => !open.has(p));
+}
+
+
+function emptyHintKey(state) {
+  return state.open.length ? null : 'noOpenTabs';
+}
+
+</script>
+<script>
+const SERVE_MODE = false;
+const SERVE_CMD = "/usr/local/bin/supervisor serve --workspace /Users/huangjian/vibe-workshop/DSH-mv-session";
+const SERVE_WS = "/Users/huangjian/vibe-workshop/DSH-mv-session";
+/* ── 加入新工程页内联自 lib/addproject.mjs ──
+   必须走插值而不是直接写在模板里：模板里的字面文本会被求值，
+   换行转义会变成真换行、正则里的反斜杠转义会被吃掉（正则静默坏掉）。
+   注：这段注释里连美元加大括号都不能出现 —— 那是插值语法本身。── */
+
+
+function parseGitLog(text, limit = 12) {
+  const out = [];
+  for (const line of String(text ?? '').split(String.fromCharCode(10))) {
+    const t = line.trim();
+    if (!t) continue;
+    const tab = t.indexOf(String.fromCharCode(9));
+    const head = tab >= 0 ? t.slice(0, tab) : t;
+    const msg = tab >= 0 ? t.slice(tab + 1) : '';
+    const parts = head.split(' ');
+    if (parts.length < 4) continue;
+    const newSha = parts[1];
+    const ts = parts[parts.length - 2];
+    if (!/^[0-9a-f]{7,40}$/.test(newSha) || !/^\d+$/.test(ts)) continue;
+    out.push({
+      sha: newSha.slice(0, 8),
+      at: new Date(Number(ts) * 1000).toISOString().slice(0, 16).replace('T', ' '),
+      msg,
+    });
+  }
+  return out.reverse().slice(0, limit);
+}
+
+
+function summarizeEntries(files) {
+  const byExt = {};
+  let tests = 0;
+  for (const name of files) {
+    const dot = name.lastIndexOf('.');
+    const ext = dot > 0 ? name.slice(dot + 1).toLowerCase() : '(无扩展名)';
+    byExt[ext] = (byExt[ext] || 0) + 1;
+    if (/test|spec/i.test(name)) tests += 1;
+  }
+  return { files: files.length, tests, byExt };
+}
+
+
+
+const isServeMode = () => typeof SERVE_MODE !== 'undefined' && SERVE_MODE === true;
+
+const api = (p, body) => fetch(p, body === undefined ? {} : {
+  method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+}).then((r) => r.json());
+
+
+function serveAddPage() {
+  const hidden = hiddenProjects(ALL_PIDS, TABS);
+  const reopen = hidden.length
+    ? '<div class="addbox" style="margin-bottom:14px"><div class="ph">' + pick('重新打开已关闭的项目', 'Reopen a closed project') + '</div>'
+      + hidden.map((pid) => '<div class="prow" data-open="' + escHtml(pid) + '">' + escHtml(projLabel(pid))
+          + ' <span class="muted small">' + escHtml(pid) + '</span></div>').join('') + '</div>'
+    : '';
+  return '<section><h2>' + pick('加入新工程', 'Add a project')
+    + ' <span class="tag">' + pick('一个按钮：选目录 → 自动采集、纳管、安装 → 打开报表页',
+        'one button: pick a folder → scan, register, set up → open the report') + '</span></h2>'
+    + reopen
+    + '<div class="addbox">'
+    + '<button class="btn primary big" id="oneClick">' + pick('① 选择工程目录并开始…', '1. Choose a folder and start…') + '</button>'
+    + '<div class="small muted" style="margin-top:6px">'
+    + pick('会弹出系统文件管理器；选定后自动完成采集、登记、安装与报表，无需再点。',
+           'An OS file manager opens; after you pick, scanning, registration, setup and the report run automatically.')
+    + '</div>'
+    + '<div id="flow" class="flow"></div>'
+    + '<details style="margin-top:12px"><summary class="small muted">' + pick('或手动填路径', 'or paste a path') + '</summary>'
+    + '<input class="pathin" id="dirPath" placeholder="' + escHtml(pick('例如 /Users/you/projects/my-repo', 'e.g. /Users/you/projects/my-repo')) + '">'
+    + ' <button class="btn" id="doInspect">' + pick('仅采集（登记前先看看）', 'scan only (peek before registering)') + '</button>'
+    + '<div id="scanOut" class="scanout"></div></details>'
+    + '</div></section>';
+}
+
+
+async function runAddFlow(dir) {
+  const box = document.getElementById('flow');
+  const steps = [];
+  const render = () => {
+    if (!box) return;
+    box.innerHTML = steps.map((s) =>
+      '<div class="fstep ' + (s.state || 'run') + '">' + (s.state === 'ok' ? '✓' : s.state === 'err' ? '✗' : '◌')
+      + ' <b>' + escHtml(s.name) + '</b> <span class="small muted">' + escHtml(s.detail || '') + '</span></div>'
+      + (s.out ? '<pre class="runlog">' + escHtml(s.out) + '</pre>' : '')).join('');
+  };
+  const add = (name, detail) => { const s = { name, detail, state: 'run' }; steps.push(s); render(); return s; };
+  const setOut = (s, text) => { s.out = (s.out || '') + text; render(); };
+
+  try {
+    const a = add(pick('采集目录', 'Scan folder'), dir);
+    const r = await api('/api/inspect', { path: dir });
+    if (r.error) { a.state = 'err'; a.detail = pick(r.error, null); render(); return; }
+    const g = r.git || {};
+    a.state = 'ok';
+    a.detail = `${r.files} ${pick('文件', 'files')} · ${r.tests} ${pick('测试文件', 'test files')}`
+      + (g.branch ? ` · git ${g.branch} ${(g.commits || []).length} ${pick('提交', 'commits')}`
+        + ` · ${pick('测试相关', 'test-related')} ${(g.testCommits || []).length}` : ` · ${pick('非 git 目录', 'not a git repo')}`);
+    render();
+
+    let pid = (r.projects && r.projects[0] && r.projects[0].pid) || null;
+    if (!pid) {
+      const derived = String(r.name || '').toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'project';
+      const b = add(pick('登记纳管', 'Register'), pick('工程 id：', 'project id: ') + derived);
+      const reg = await api('/api/register', { path: dir, pid: derived, name: r.name });
+      if (reg.ok) { pid = reg.pid; b.state = 'ok'; b.detail = pick('已登记为工程 ', 'registered as ') + reg.pid; }
+      else if (/已存在/.test(reg.error || '')) { pid = derived; b.state = 'ok'; b.detail = pick('已存在，沿用 ', 'already registered, reusing ') + derived; }
+      else { b.state = 'err'; b.detail = pick(reg.error, null); render(); return; }
+      render();
+    } else {
+      const b = add(pick('登记纳管', 'Register'), pick('该目录已登记为工程 ', 'already registered as ') + pid);
+      b.state = 'ok'; render();
+    }
+
+    if ((r.suggestedSteps || []).length) {
+      const c = add(pick('运行安装', 'Run setup'), r.suggestedSteps.map((x) => x.cmd + ' ' + x.args.join(' ')).join(' ;; '));
+      const job = await api('/api/setup', { path: dir, steps: r.suggestedSteps });
+      if (!job.ok) { c.state = 'err'; c.detail = pick(job.error, null); render(); }
+      else {
+        await new Promise((resolve) => {
+          const es = new EventSource('/api/job/' + job.jobId + '/events');
+          es.onmessage = (ev) => {
+            const d = JSON.parse(ev.data);
+            if (d.type === 'output') setOut(c, d.text);
+            else if (d.type === 'step-end') setOut(c, '\n' + (d.code === 0 ? '✔ ' : '✘ ') + d.cmd + ' exit ' + d.code + '\n');
+            else if (d.type === 'done') { c.state = 'ok'; c.detail = pick('安装完成', 'setup finished'); render(); es.close(); resolve(); }
+            else if (d.type === 'aborted') { c.state = 'err'; c.detail = pick('安装中断', 'setup aborted'); render(); es.close(); resolve(); }
+          };
+          es.onerror = () => { c.state = 'err'; c.detail = pick('进度连接中断', 'progress stream lost'); es.close(); resolve(); };
+        });
+      }
+    } else {
+      const c = add(pick('运行安装', 'Run setup'), pick('未检测到需要安装的依赖（无 package.json / requirements.txt）', 'no dependencies detected'));
+      c.state = 'ok'; render();
+    }
+
+    const d = add(pick('打开报表页', 'Open report'), pick('工程 ', 'project ') + pid);
+    d.state = 'ok'; render();
+    try {
+      const st = JSON.parse(localStorage.getItem(LS_KEY) || 'null') || { open: [], active: null, known: [] };
+      st.open = Array.from(new Set([...(st.open || []), pid]));
+      st.active = pid;
+      st.known = Array.from(new Set([...(st.known || []), pid]));
+      localStorage.setItem(LS_KEY, JSON.stringify(st));
+    } catch (e) {  }
+    await new Promise((r2) => setTimeout(r2, 400));
+    location.reload();
+  } catch (e) {
+    add(pick('出错', 'Error'), String((e && e.message) || e)).state = 'err';
+    render();
+  }
+}
+
+
+async function bindServeAddPage() {
+  const pathIn = document.getElementById('dirPath');
+  const out = document.getElementById('scanOut');
+  const one = document.getElementById('oneClick');
+  if (one) one.onclick = async () => {
+    const box = document.getElementById('flow');
+    if (box) box.innerHTML = '<div class="small muted">' + pick('等待系统目录选择器…', 'waiting for the folder picker…') + '</div>';
+    const r = await api('/api/pick-folder');
+    if (r.cancelled) { if (box) box.innerHTML = '<div class="small muted">' + pick('已取消', 'cancelled') + '</div>'; return; }
+    if (!r.ok) {
+      if (box) box.innerHTML = '<div class="small" style="color:#b45309">' + escHtml(r.reason || '无法弹出选择器，请用下方「手动填路径」') + '</div>';
+      return;
+    }
+    if (pathIn) pathIn.value = r.path;
+    runAddFlow(r.path);
+  };
+  const doInspect = async () => {
+    if (!pathIn || !pathIn.value.trim()) return;
+    const put = (h) => { if (out) out.innerHTML = h; };
+    put('<div class="small muted">' + pick('正在采集…', 'scanning…') + '</div>');
+    const r = await api('/api/inspect', { path: pathIn.value.trim() });
+    put(serveInspectHTML(r));
+    bindAfterInspect();
+  };
+  const scan = document.getElementById('doInspect');
+  if (scan) scan.onclick = doInspect;
+}
+
+
+function serveInspectHTML(r) {
+  if (r.error) return '<div class="small" style="color:#b45309">' + escHtml(pick(r.error, null)) + '</div>';
+  const top = Object.keys(r.byExt || {}).sort((a, b) => r.byExt[b] - r.byExt[a]).slice(0, 8)
+    .map((k) => '<span class="pill2">' + escHtml(k) + ' ' + r.byExt[k] + '</span>').join(' ');
+  const g = r.git || {};
+  const rows = (list, title) => (list && list.length)
+    ? '<div class="ph" style="margin-top:10px">' + escHtml(title) + '</div>'
+      + '<table><thead><tr><th>' + pick('时间', 'Time') + '</th><th>commit</th><th>' + pick('说明', 'Message') + '</th></tr></thead><tbody>'
+      + list.map((c) => '<tr><td class="small muted" style="white-space:nowrap">' + escHtml(c.at) + '</td><td><code>' + escHtml(c.sha) + '</code></td><td>' + escHtml(c.msg) + '</td></tr>').join('')
+      + '</tbody></table>'
+    : '';
+  const hasProjects = (r.projects || []).length > 0;
+  const ws = r.isWorkspace
+    ? '<div class="ph" style="margin-top:12px">' + pick('该目录已是监理工作区', 'Already a supervision workspace') + '</div>'
+      + (hasProjects
+        ? '<div class="small muted">' + pick('已登记工程：', 'registered: ') + (r.projects || []).map((p) => escHtml(p.pid)).join('、') + '</div>'
+        : '<div class="small muted">' + pick('但还没有登记任何工程 —— 把当前目录登记为一个工程：', 'but no project is registered yet — register this folder as one:') + '</div>')
+      + (hasProjects ? '' : '<input class="pathin" id="newPid" placeholder="' + escHtml(pick('工程 id，例如 hdh', 'project id, e.g. hdh')) + '">'
+        + ' <button class="btn primary" id="doRegister">' + pick('登记', 'Register') + '</button><div id="regOut"></div>')
+    : '<div class="ph" style="margin-top:12px">' + pick('登记为工程', 'Register as a project') + '</div>'
+      + '<div class="small muted" style="margin-bottom:6px">' + pick('给它一个工程 id（字母数字与 - _ .），登记后即可立项、立基线。',
+          'Give it a project id (letters, digits, - _ .); registration creates the record so you can baseline it.') + '</div>'
+      + '<input class="pathin" id="newPid" placeholder="' + escHtml(pick('工程 id，例如 my-site', 'project id, e.g. my-site')) + '">'
+      + ' <button class="btn primary" id="doRegister">' + pick('登记', 'Register') + '</button>'
+      + '<div id="regOut"></div>';
+  const setup = (r.suggestedSteps || []).length
+    ? '<div class="ph" style="margin-top:14px">' + pick('② 运行安装（执行前请确认命令）', '2. Run setup (confirm the commands first)') + '</div>'
+      + '<div class="small muted" style="margin-bottom:5px">' + pick('检测到以下命令。点执行后会在该目录里真实运行，输出实时回传。',
+          'These commands were detected. Running them executes for real in that folder, with live output.') + '</div>'
+      + r.suggestedSteps.map((s) => '<code class="cmd">' + escHtml(s.cmd + ' ' + s.args.join(' ')) + '   ← ' + escHtml(s.why) + '</code>').join('')
+      + '<button class="btn primary" id="doSetup" style="margin-top:6px">' + pick('执行安装', 'Run setup') + '</button>'
+      + '<div id="setupOut"></div>'
+    : '<div class="small muted" style="margin-top:10px">' + pick('未检测到需要安装的依赖（没有 package.json / requirements.txt）。',
+        'No dependencies detected (no package.json / requirements.txt).') + '</div>';
+  return '<div class="scanrep">'
+    + '<div class="ph">' + pick('采集结果', 'Scan result') + '　<span class="muted small">' + escHtml(r.path) + '</span></div>'
+    + '<div class="kpi2"><div><b>' + r.files + '</b> ' + pick('文件', 'files') + '</div>'
+    + '<div><b>' + r.dirs + '</b> ' + pick('目录', 'folders') + '</div>'
+    + '<div><b>' + r.tests + '</b> ' + pick('测试文件', 'test files') + '</div>'
+    + '<div><b>' + (g.branch ? escHtml(g.branch) : pick('否', 'no')) + '</b> git</div></div>'
+    + (top ? '<div style="margin:7px 0">' + top + '</div>' : '')
+    + (g.error ? '<div class="small muted">' + escHtml(pick(g.error, null)) + '</div>' : '')
+    + rows(g.commits, pick('历史提交（最近 12 条）', 'Commit history (latest 12)'))
+    + rows(g.testCommits, pick('测试相关提交（路径含 test / spec，最近 8 条）', 'Test-related commits (path matches test/spec, latest 8)'))
+    + ws + setup
+    + '</div>';
+}
+
+
+async function runSetupWithProgress(dir, steps) {
+  const out = document.getElementById('setupOut');
+  const put = (html) => { if (out) out.innerHTML = html; };
+  put('<div class="small muted">' + pick('正在执行…', 'Running…') + '</div>');
+  const r = await api('/api/setup', { path: dir, steps });
+  if (!r.ok) { put('<div class="small" style="color:#b45309">' + escHtml(pick(r.error, null) || '?') + '</div>'); return; }
+  let log = '';
+  const bar = '<div class="prog"><i id="progBar" style="width:0%"></i></div>';
+  put(bar + '<pre id="setupLog" class="runlog"></pre>');
+  const pre = document.getElementById('setupLog');
+  const barEl = document.getElementById('progBar');
+  const total = steps.length;
+  const es = new EventSource('/api/job/' + r.jobId + '/events');
+  es.onmessage = (ev) => {
+    const d = JSON.parse(ev.data);
+    if (d.type === 'step-start') {
+      log += '\n▶ [' + (d.index + 1) + '/' + total + '] ' + d.cmd + ' ' + d.args.join(' ') + '\n';
+      if (barEl) barEl.style.width = Math.round((d.index / total) * 100) + '%';
+    } else if (d.type === 'output') {
+      log += d.text;
+    } else if (d.type === 'step-end') {
+      log += '\n' + (d.code === 0 ? '✔ 完成' : '✘ 失败（退出码 ' + d.code + '）') + (d.error ? ' ' + d.error : '') + '\n';
+      if (barEl) barEl.style.width = Math.round(((d.index + 1) / total) * 100) + '%';
+    } else if (d.type === 'done') {
+      log += '\n== 全部完成 =='; es.close();
+    } else if (d.type === 'aborted') {
+      log += '\n== 已中止（某一步失败）=='; es.close();
+    }
+    if (pre) { pre.textContent = log; pre.scrollTop = pre.scrollHeight; }
+  };
+  es.onerror = () => { log += '\n（进度连接中断，服务可能已停止）'; if (pre) pre.textContent = log; es.close(); };
+}
+
+
+function bindAfterInspect() {
+  const pathIn = document.getElementById('dirPath');
+  const cur = () => (pathIn && pathIn.value ? pathIn.value.trim() : '');
+  const reg = document.getElementById('doRegister');
+  if (reg) reg.onclick = async () => {
+    const pidEl = document.getElementById('newPid');
+    const o = document.getElementById('regOut');
+    const r = await api('/api/register', { path: cur(), pid: pidEl ? pidEl.value.trim() : '' });
+    if (o) {
+      o.innerHTML = r.ok
+        ? '<div class="small" style="color:#15803d">' + pick('已登记工程 ', 'Registered ') + escHtml(r.pid) + '</div>'
+          + (r.nextSteps || []).map((x) => '<div class="small muted">→ ' + escHtml(x) + '</div>').join('')
+        : '<div class="small" style="color:#b45309">' + escHtml(pick(r.error, null) || pick('登记失败','registration failed')) + '</div>';
+    }
+  };
+  const setup = document.getElementById('doSetup');
+  if (setup) setup.onclick = () => {
+    const cmds = Array.from(document.querySelectorAll('#scanOut code.cmd')).map((el) => el.textContent.split('   ← ')[0].trim());
+    const steps = cmds.map((c) => { const p = c.split(/\s+/); return { cmd: p[0], args: p.slice(1) }; });
+    runSetupWithProgress(cur(), steps);
+  };
+}
+
+
+
+
+
+const SERVE_PORTS = [7799, 7800, 7801, 7802];
+
+
+async function probeServe() {
+  for (const port of SERVE_PORTS) {
+    let timer = null;
+    try {
+      const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      if (ctrl) timer = setTimeout(function () { ctrl.abort(); }, 700);
+      const r = await fetch('http://127.0.0.1:' + port + '/api/health',
+        ctrl ? { cache: 'no-store', signal: ctrl.signal } : { cache: 'no-store' });
+      if (!r.ok) continue;
+      const j = await r.json();
+      if (j && j.ok) return { port, workspace: j.workspace, url: 'http://127.0.0.1:' + port + '/' };
+    } catch (e) {  }
+    finally { if (timer) clearTimeout(timer); }
+  }
+  return null;
+}
+
+
+function serveBannerHTML(hit) {
+  if (!hit) return '';
+  const same = hit.workspace === SERVE_WS;
+  return '<div class="servehit">'
+    + '<b>' + pick('检测到本地服务正在运行', 'Local server detected') + '</b>'
+    + ' <span class="muted small">端口 ' + hit.port + ' · ' + escHtml(hit.workspace || '') + '</span>'
+    + '<div style="margin-top:6px"><a class="btn primary" href="' + escHtml(hit.url) + '" target="_blank" rel="noopener">'
+    + pick('打开完整界面', 'Open the full interface') + '</a>'
+    + '<span class="small muted" style="margin-left:8px">'
+    + pick('在那里可选目录、跑安装、登记工程、实时看进度。',
+           'There you can pick folders, run setup, register projects and watch live progress.')
+    + '</span></div>'
+    + (same ? '' : '<div class="small muted" style="margin-top:5px">'
+        + pick('注意：该服务的工作区与本页不同（本页 ', 'Note: that server serves a different workspace (this page: ')
+        + escHtml(SERVE_WS) + pick('）', ')') + '</div>')
+    + '</div>';
+}
+
+
+function serveHintHTML(what) {
+  return '<div class="servehint" id="serveHint">'
+    + '<div class="small" style="margin-bottom:5px">'
+    + pick('要在浏览器里完成「', 'To do “') + pick(what, serveHintEn(what)) + pick('」，需要一个本地服务（浏览器不能写盘、没有 shell）。',
+        '” from the browser you need a local server (a browser cannot write to disk and has no shell).')
+    + '</div>'
+    + '<div class="cmdrow"><code class="cmd" id="serveCmdText">' + escHtml(SERVE_CMD) + '</code>'
+    + '<button class="btn" id="copyServeCmd">' + pick('复制', 'Copy') + '</button>'
+    + '<button class="btn" id="recheckServe">' + pick('我已启动，重新检测', 'Started it — re-check') + '</button>'
+    + '</div>'
+    + '<div class="small muted" style="margin-top:5px">'
+    + pick('在任意目录都能跑（命令里已写死绝对路径与工作区）。页面加载时也会自动检测。',
+           'Runs from any directory (the command already carries the absolute path and workspace). The page also detects it automatically on load.')
+    + '</div></div>';
+}
+
+
+function serveHintEn(zh) {
+  const m = {
+    '登记工程': 'register a project', '跑安装': 'run setup',
+    '读取目录内容': 'read a folder', '新增工程': 'add a project',
+  };
+  return m[zh] || zh;
+}
+
+
+function addProjectPage() {
+  if (isServeMode()) return serveAddPage();
+  const supported = typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function';
+  const hidden = hiddenProjects(ALL_PIDS, TABS);
+  const reopen = hidden.length
+    ? '<div class="ph">' + pick('重新打开已关闭的项目', 'Reopen a closed project') + '</div>'
+      + hidden.map((pid) => '<div class="prow" data-open="' + escHtml(pid) + '">' + escHtml(projLabel(pid))
+          + ' <span class="muted small">' + escHtml(pid) + '</span></div>').join('')
+    : '';
+  return '<section><h2>' + pick('加入新工程', 'Add a project')
+    + ' <span class="tag">' + pick('选一个目录，就地采集，形成报表', 'pick a folder, scan it in place, get a report') + '</span></h2>'
+    + (reopen ? '<div class="addbox" style="margin-bottom:14px">' + reopen + '</div>' : '')
+    + '<div class="addbox">'
+    + '<div class="ph">' + pick('① 选择工程目录', '1. Choose the project folder') + '</div>'
+    + '<div class="small muted" style="margin-bottom:7px">'
+    + pick('选定后在浏览器内直接读取该目录（不上传、不联网）：文件与目录计数、测试文件、git 仓库与提交历史。',
+           'The folder is read locally in your browser (nothing is uploaded): file/folder counts, test files, git repo and commit history.')
+    + '</div>'
+    + '<button class="btn primary" id="pickDir">' + pick('选择工程目录…', 'Choose folder…') + '</button>'
+    + (supported ? '' : '<div class="small" style="color:#b45309;margin-top:6px">'
+      + pick('当前浏览器不支持目录选择（需要 Chrome / Edge 的 File System Access API）。可在下方手动填入路径，再用本地服务读取。',
+             'This browser has no directory picker (needs the File System Access API). Paste a path below, then read it through the local server.')
+      + '</div>')
+    + '<div class="small muted" style="margin-top:8px">' + pick('或手动填路径', 'or paste a path') + '</div>'
+    + '<input class="pathin" id="dirPath" placeholder="' + escHtml(pick('例如 /Users/you/projects/my-repo', 'e.g. /Users/you/projects/my-repo')) + '">'
+    + '<div id="scanOut" class="scanout"></div>'
+    + '<div class="ph" style="margin-top:14px">' + pick('② 登记工程与运行安装', '2. Register the project and run setup') + '</div>'
+    + '<div id="serveSlot">' + serveHintHTML('登记工程、跑安装') + '</div>'
+    + '</section>';
+}
+
+
+async function probeWorkspace(handle) {
+  const out = { isWorkspace: false, projects: [] };
+  try {
+    const data = await handle.getDirectoryHandle('data', { create: false });
+    const projects = await data.getDirectoryHandle('projects', { create: false });
+    out.isWorkspace = true;
+    for await (const child of projects.values()) {
+      if (child.kind !== 'directory') continue;
+      try {
+        const fh = await child.getFileHandle('project.json', { create: false });
+        const meta = JSON.parse(await (await fh.getFile()).text());
+        out.projects.push({ pid: child.name, name: meta.name || child.name });
+      } catch (e) {
+        out.projects.push({ pid: child.name, name: child.name });   // 没 project.json 的目录也报出来
+      }
+    }
+  } catch (e) {
+    out.isWorkspace = false;      // 没有 data/projects 就不是工作区，不是错误
+  }
+  return out;
+}
+
+
+async function scanDirectory(handle) {
+  const names = [];
+  let dirs = 0, hasGit = false, gitHandle = null;
+  const walk = async (dir, depth) => {
+    if (depth > 3) return;
+    for await (const entry of dir.values()) {
+      if (entry.name === 'node_modules' || entry.name === '.DS_Store' || entry.name === '.git') {
+        if (entry.name === '.git' && entry.kind === 'directory') { hasGit = true; gitHandle = entry; }
+        continue;
+      }
+      if (entry.kind === 'directory') { dirs += 1; await walk(entry, depth + 1); }
+      else names.push(entry.name);
+    }
+  };
+  await walk(handle, 0);
+  const s = summarizeEntries(names);
+  const out = { name: handle.name, files: s.files, dirs, tests: s.tests, byExt: s.byExt, hasGit, commits: [], workspace: null };
+  try { out.workspace = await probeWorkspace(handle); } catch (e) { out.workspace = null; }
+  if (gitHandle) {
+    try {
+      const logsDir = await gitHandle.getDirectoryHandle('logs', { create: false });
+      const headFh = await logsDir.getFileHandle('HEAD', { create: false });
+      out.commits = parseGitLog(await (await headFh.getFile()).text());
+    } catch (e) {
+      out.gitErr = String((e && e.message) || e);
+    }
+  }
+  return out;
+}
+
+
+function scanReportHTML(r) {
+  const top = Object.keys(r.byExt).sort((a, b) => r.byExt[b] - r.byExt[a]).slice(0, 8)
+    .map((k) => '<span class="pill2">' + escHtml(k) + ' ' + r.byExt[k] + '</span>').join(' ');
+  const rows = (r.commits || []).map((c) => '<tr><td class="small muted" style="white-space:nowrap">'
+    + escHtml(c.at) + '</td><td><code>' + escHtml(c.sha) + '</code></td><td>' + escHtml(c.msg) + '</td></tr>').join('');
+  return '<div class="scanrep">'
+    + '<div class="ph">' + pick('采集结果', 'Scan result') + '　<span class="muted small">' + escHtml(r.name) + '</span></div>'
+    + '<div class="kpi2"><div><b>' + r.files + '</b> ' + pick('文件', 'files') + '</div>'
+    + '<div><b>' + r.dirs + '</b> ' + pick('目录', 'folders') + '</div>'
+    + '<div><b>' + r.tests + '</b> ' + pick('测试文件', 'test files') + '</div>'
+    + '<div><b>' + (r.hasGit ? pick('是', 'yes') : pick('否', 'no')) + '</b> git</div></div>'
+    + (top ? '<div style="margin:7px 0">' + top + '</div>' : '')
+    + (rows
+      ? '<div class="ph" style="margin-top:10px">' + pick('历史提交（读自 .git/logs/HEAD，最近 12 条）', 'Commit history (from .git/logs/HEAD, latest 12)') + '</div>'
+        + '<table><thead><tr><th>' + pick('时间', 'Time') + '</th><th>commit</th><th>' + pick('说明', 'Message') + '</th></tr></thead><tbody>' + rows + '</tbody></table>'
+      : '<div class="small muted">' + pick('该目录不是 git 仓库，或读不到提交记录。', 'Not a git repository, or no commit log readable.') + '</div>')
+    + workspaceBlockHTML(r)
+    + '</div>';
+}
+
+
+function workspaceBlockHTML(r) {
+  const ws = r.workspace;
+  if (ws && ws.isWorkspace && ws.projects.length) {
+    const known = (typeof DATA !== 'undefined' && DATA.projects ? DATA.projects.map(function (p) { return p.pid; }) : []);
+    const rows = ws.projects.map(function (p) {
+      const here = known.indexOf(p.pid) >= 0;
+      return '<div class="prow" ' + (here ? 'data-open="' + escHtml(p.pid) + '"' : '') + '>'
+        + escHtml(p.name) + ' <span class="muted small">' + escHtml(p.pid) + '</span>'
+        + (here
+          ? ' <span class="vax">' + pick('已在标签页', 'open as tab') + '</span>'
+          : ' <span class="muted small">' + pick('不在本页数据里，需重新生成仪表台', 'not in this page\'s data; regenerate the dashboard') + '</span>')
+        + '</div>';
+    }).join('');
+    return '<div class="ph" style="margin-top:12px">'
+      + pick('该目录已经是工程工作区（已登记 ' + ws.projects.length + ' 个工程）', 'This folder is already a workspace (' + ws.projects.length + ' projects)')
+      + '</div>'
+      + '<div class="small muted" style="margin-bottom:5px">'
+      + pick('再次添加同一目录不会新建工程（监理数据由 data/projects/ 决定）。要打开已有工程，点下面的条目。',
+             'Adding the same folder again does not create a second project (the data lives in data/projects/). Click an entry below to open it.')
+      + serveHintHTML('新增工程')
+      + '</div>' + rows;
+  }
+  return '<div class="ph" style="margin-top:12px">' + pick('登记为工程', 'Register as a project') + '</div>'
+    + '<div class="small muted">'
+    + pick('这个目录还不是监理工作区（没有 data/projects/）。登记需要写盘，浏览器做不到。本次采集只读，未改动该目录。',
+           'This folder is not a supervision workspace yet (no data/projects/). Registering needs disk writes, which a browser cannot do. This scan was read-only; nothing was changed.')
+    + serveHintHTML('登记工程')
+    + '</div>';
+}
+
+
+async function onPickDir() {
+  const out = document.getElementById('scanOut');
+  const setOut = (html) => { if (out) out.innerHTML = html; };
+  if (typeof window === 'undefined' || typeof window.showDirectoryPicker !== 'function') {
+    setOut('<div class="small" style="color:#b45309">'
+      + pick('此浏览器不支持目录选择。请用 Chrome / Edge，或用本地服务读取。',
+             'This browser has no folder picker. Use Chrome / Edge, or read it through the local server.')
+      + serveHintHTML('读取目录内容') + '</div>');
+    return;
+  }
+  let handle;
+  try {
+    handle = await window.showDirectoryPicker({ mode: 'read' });
+  } catch (e) {
+    return;                      // 用户取消：不当作错误
+  }
+  const inp = document.getElementById('dirPath');
+  if (inp) inp.value = handle.name;
+  setOut('<div class="small muted">' + pick('正在采集…', 'Scanning…') + '</div>');
+  try {
+    setOut(scanReportHTML(await scanDirectory(handle)));
+  } catch (e) {
+    setOut('<div class="small" style="color:#b45309">' + escHtml(String((e && e.message) || e)) + '</div>');
+  }
+}
+
+
+async function bindServeHint() {
+  const slot = document.getElementById('serveSlot') || document.getElementById('serveHint');
+  const refresh = async () => {
+    const hit = await probeServe();
+    if (slot && hit) slot.innerHTML = serveBannerHTML(hit);
+    return hit;
+  };
+  await refresh();
+  document.querySelectorAll('#copyServeCmd').forEach((b) => {
+    b.onclick = async () => {
+      try { await navigator.clipboard.writeText(SERVE_CMD); b.textContent = pick('已复制', 'Copied'); }
+      catch (e) {
+        const t = document.getElementById('serveCmdText');
+        if (t && window.getSelection) {
+          const r = document.createRange(); r.selectNodeContents(t);
+          const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+        }
+        b.textContent = pick('已选中，按 ⌘C', 'Selected — press ⌘C');
+      }
+      setTimeout(() => { b.textContent = pick('复制', 'Copy'); }, 1600);
+    };
+  });
+  document.querySelectorAll('#recheckServe').forEach((b) => {
+    b.onclick = async () => {
+      b.textContent = pick('检测中…', 'Checking…');
+      const hit = await refresh();
+      b.textContent = hit ? pick('已找到', 'Found') : pick('仍未检测到', 'Still not found');
+      setTimeout(() => { b.textContent = pick('我已启动，重新检测', 'Started it — re-check'); }, 1800);
+    };
+  });
+}
+
+
+if (typeof document !== 'undefined' && document.getElementById('serveHint') && !isServeMode()) {
+  bindServeHint();
+}
+
+</script>
+<script>
+const DATA = JSON.parse(document.getElementById('payload').textContent);
+const M_COLOR = {"小":"#1d4ed8","中":"#ca8a04","大":"#ea580c","总":"#c62828"};
+const DIMS = ["cost","quality","schedule","goal","constraint","risk"];
+const DIM_LABEL = {"cost":["成本","Cost"],"quality":["质量","Quality"],"schedule":["进度","Schedule"],"goal":["目标","Goal"],"constraint":["约束","Constraint"],"risk":["风险","Risk"]};
+const BAND = {"exemplary":["优于预期","Exemplary","#15803d"],"pass":["达预期","Pass","#16a34a"],"pass-with-conditions":["有偏差可控","Pass with conditions","#ca8a04"],"intervene":["需要干预","Intervene","#ea580c"],"regress-or-restart":["严重偏离","Regress / restart","#c62828"],"capped":["封顶","Capped","#7f1d1d"]};
+const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));   // 命名避碰：graph.mjs 的 renderGraphSvg 内部也有 const esc
+const fmt = (x, n = 2) => (x == null ? '—' : Number(x).toFixed(n));
+const deltaStr = (x) => (x == null ? '—' : `${x > 0 ? '+' : ''}${Number(x).toFixed(2)}`);
+const deltaColor = (x) => (x == null ? '#6b7280' : x > 0.01 ? '#15803d' : x < -0.01 ? '#c62828' : '#6b7280');
+const bandOf = (v) => (v == null ? null : v >= 90 ? 'exemplary' : v >= 75 ? 'pass' : v >= 60 ? 'pass-with-conditions' : v >= 40 ? 'intervene' : 'regress-or-restart');
+const round2 = (x) => Math.round(x * 100) / 100;   // ← 曾漏内联，导致渲染期 ReferenceError 而页面全空
+const vShort = (v) => {
+  if (v == null || v === '') return '';
+  return String(v).split('+').map((part) => {
+    const segs = String(part).replace(/^V/, '').split('.');
+    if (!segs.every((x) => /^\d+$/.test(x))) return String(part);   // 非纯数字号（V1a 等）原样
+    // 四段式是基本概念：段数不省，只去每段的前导零（01→1，02→2，00→0）
+    return segs.map((x) => String(Number(x))).join('.');
+  }).join('+');
+};
+/**
+ * 带轴标识的版本号 —— 界面上【每一个】版本号都必须带轴。
+ *
+ * 用户两次指出三个号混在一起看不懂：SupV / CodeV / TestV 都是四段 xx.xx.xx.xx，
+ * 而且【基线那一行的 SupV 与 CodeV 是同一个字符串 1.0.0.0】—— 不带轴标识，
+ * 读者无法判断"这个 1.0.0.0"指的是哪个。上一轮我只在项目卡与得分热力加了标识，
+ * 其余框里仍是裸号，于是看起来"每个框里都不一样"。
+ * 现在收敛到这一个函数：凡显示版本号，一律经它。
+ */
+const VAX = { supv: 'SupV', codev: 'CodeV', testv: 'TestV' };
+const vt = (kind, id) => (id == null || id === '' || id === '—')
+  ? '<span class="muted">—</span>'
+  : '<span class="vax">' + (VAX[kind] || kind) + '</span>' + escHtml(vShort(id));
+/** 属性位（title 等）用的纯文本版本 */
+const vtText = (kind, id) => (id == null || id === '') ? '—' : ((VAX[kind] || kind) + ' ' + vShort(id));
+/** 属性位专用：t() 返回含双引号的 HTML，塞进 title="" 会把属性截断（实测踩过）。属性只能放纯文本。 */
+const attrZh = (zh, en) => escHtml(en ? (zh + ' / ' + en) : zh);
+/** 属性位双语标题（title 不能含 HTML 标签，故并列书写） */
+const attrT = (zh, en) => escHtml(zh + ' ／ ' + en);
+const t = (zh, en) => '<span data-zh>' + escHtml(zh) + '</span><span data-en>' + escHtml(en) + '</span>';
+
+/**
+ * 语言取数器（模块级，所有区块可用）：
+ * 英文页优先取英文对照，缺英文时回落中文 —— 数据文本也能随语言切换。
+ * 由 renderAll(lang) 生成的整页 HTML 决定 LANG；切换语言时整体替换 #app 内容。
+ */
+let LANG = 'zh';
+/**
+ * 语言取数（唯一机制）：中文原文 → 对照表 → 模式表 → 原样返回。
+ * 显式 en 参数仍可覆盖（少量数据自带英文对照时用），但不再是主要手段。
+ */
+const pick = (zh, en) => {
+  if (LANG !== 'en') return zh;
+  // 显式英文值须真的是英文：含中文即视为脏数据（历史脚本曾把中文写进 *En 字段），回落到对照表
+  // 反斜杠必须写两个：写一个会被模板求值成真字符「一」（碰巧等价，但那是运气不是设计）。
+  const looksEn = typeof en === 'string' && en && en !== zh && !/[\u4e00-\u9fa5]/.test(en);
+  if (looksEn) return en;
+  return typeof tr === 'function' ? tr(zh, 'en') : zh;
+};
+
+document.getElementById('gen').textContent = DATA.generatedAt.slice(0,19).replace('T',' ')
+  + ' · ' + DATA.projects.length + ' proj / ' + DATA.projects.reduce((s,p)=>s+p.versions.length,0) + ' ver';
+
+document.getElementById('langBtn').onclick = (e) => {
+  document.body.classList.toggle('en');
+  const en = document.body.classList.contains('en');
+  e.target.textContent = en ? '中文' : 'EN';
+  e.target.title = en ? 'Switch back to Chinese' : 'Switch to English';
+  if (typeof applyLang === 'function') applyLang();
+};
+
+// ── 区块 ① 项目卡 ──────────────────────────────────────────────────
+
+function projectCard(p) {
+  const vs = p.versions;
+  const head = vs[vs.length-1];
+  const cps = p.project.checkpoints || [];
+  const pe = p.projectEn || {};
+  const cpsEn = pe.checkpoints || [];
+  const rows = cps.map((c, i) => '<tr><td>' + escHtml(pick(c.zh || c.id, (cpsEn[i] && cpsEn[i].zh) || c.zh || c.id))
+    + '</td><td>' + escHtml(pick(c.text, cpsEn[i] && cpsEn[i].text))
+    + '</td><td class="small muted">' + escHtml(pick(c['判据来源'] || '—', cpsEn[i] && cpsEn[i].source))
+    + '</td><td class="small muted">' + escHtml(pick(c['右列取证'] || '—', cpsEn[i] && cpsEn[i].rightRef)) + '</td></tr>').join('');
+  const consEn = pe.constraints || [];
+  const cons = (p.project.constraints || []).map((c, i) => {
+    const lv = c.level === 'red-line' ? '#c62828' : '#ca8a04';
+    return '<div style="margin:2px 0"><span class="pill" style="background:' + lv + '">'
+      + escHtml(c.id) + ' · ' + escHtml(c.level) + '</span> '
+      + escHtml(pick(c.text, consEn[i] && consEn[i].text)) + '</div>';
+  }).join('') || '<div class="muted small">—</div>';
+  return '<section><h2>① ' + pick('项目卡','Project card') + ' <span class="tag">' + escHtml(pick(p.project.name || p.pid, pe.name)) + '</span></h2>'
+    + '<div class="grid" style="margin-bottom:12px">'
+    + '<div class="kpi"><div class="k">' + pick('当前版本','Current version') + '</div>'
+    + '<div class="v">' + (head ? vt('supv', head.id) : '—') + '</div>'
+    + (head ? '<div class="small muted">' + escHtml(pick('级差','Grade') + ' ' + pick(head.change?.M ?? '—', null)
+        + ' · ' + pick('本车道第','lane #') + ' ' + laneIndex(vs, head)) + '</div>' : '')
+    + '</div>'
+    + '<div class="kpi"><div class="k">' + pick('适应度（fitness）','fitness') + '</div><div class="v" style="color:' + (head && head.fitness ? (BAND[bandOf(head.fitness.value)]||['','','#18181b'])[2] : '#18181b') + '">'
+    + (head && head.fitness ? fmt(head.fitness.value) : '—') + '</div></div>'
+    + '<div class="kpi"><div class="k">' + pick('版本数','Versions') + '</div><div class="v">' + vs.length + '</div>'
+    + (vs.length ? '' : '<div class="small muted">' + pick('尚未立项','not baselined yet') + '</div>') + '</div>'
+    + '<div class="kpi"><div class="k">' + pick('停机记录','Stopped (compliant)') + '</div><div class="v">' + (p.stops||[]).length + '</div></div>'
+    + '</div>'
+    + statsBlock(p)
+    + (vs.length ? '' : '<div class="empty">' + pick(
+        '该工程已登记，统计已自动采集（见上）；评分需要先立基线：',
+        'Registered; statistics are collected automatically (above). Scoring needs a baseline first:')
+      + '<code class="cmd">' + escHtml('supervisor baseline --project ' + p.pid + ' --session <会话id> --derive') + '</code></div>')
+    + '<div class="small" style="margin-bottom:10px"><b>' + pick('目标','Goal') + '</b>：'
+    + escHtml(pick(p.project.goal?.text || '—', pe.goal)) + '</div>'
+    + (rows ? '<table><thead><tr><th>' + pick('考核点','Checkpoint') + '</th><th>' + pick('阈值','Threshold') + '</th><th>'
+        + pick('判据来源','Evidence source') + '</th><th>' + pick('右列取证','Test-side anchor') + '</th></tr></thead><tbody>' + rows + '</tbody></table>' : '')
+    + '<div class="small" style="margin-top:10px"><b>' + pick('约束','Constraints') + '</b>' + pick('：',':') + '</div>'
+    + '<div class="small">' + cons + '</div>'
+    + '</section>';
+}
+
+
+function spanOf(g) {
+  const ts = (g.commits || []).map((c) => Date.parse(String(c.at).replace(' ', 'T') + ':00')).filter((x) => Number.isFinite(x));
+  if (ts.length < 2) return '0';
+  return String(Math.round((Math.max(...ts) - Math.min(...ts)) / 86400000));
+}
+
+function statsBlock(p) {
+  const st = p.stats;
+  if (!st) return '';
+  if (st.error) {
+    return '<div class="statbox"><span class="muted small">' + pick('统计不可用：','Statistics unavailable: ')
+      + escHtml(pick(st.error, null)) + '</span></div>';
+  }
+  const g = st.git || {};
+  const cell = (k, v, sub) => '<div class="st"><div class="k">' + escHtml(k) + '</div><div class="v">' + v + '</div>'
+    + (sub ? '<div class="small muted">' + escHtml(sub) + '</div>' : '') + '</div>';
+  const top = Object.keys(st.byExt || {}).sort((a, b) => st.byExt[b] - st.byExt[a]).slice(0, 5)
+    .map((k) => '<span class="pill2">' + escHtml(k) + ' ' + st.byExt[k] + '</span>').join(' ');
+  const gitVal = g.error ? '<span class="muted">—</span>'
+    : escHtml(g.branch || '—') + ' <span class="small muted">' + (g.commits || []).length + ' ' + pick('次提交','commits') + '</span>';
+  const gitSub = g.error ? pick(g.error, null)
+    : [g.commits && g.commits[0] ? pick('最近','latest') + ' ' + g.commits[0].at : null,
+       pick('跨度','span') + ' ' + spanOf(g) + ' ' + pick('天','d')].filter(Boolean).join(' · ');
+  return '<div class="statbox">'
+    + '<div class="small muted" style="margin-bottom:6px">' + pick('项目统计（自动采集）','Project statistics (collected automatically)')
+    + (p.statsDir ? '　<span class="data" title="' + escHtml(p.statsDir) + '">📁</span>' : '') + '</div>'
+    + '<div class="statgrid">'
+    + cell(pick('规模','Scale'), st.files + ' <span class="small">' + pick('文件','files') + '</span>',
+      st.dirs + ' ' + pick('目录','dirs') + ' · ' + st.tests + ' ' + pick('测试文件','test files'))
+    + cell('git', gitVal, gitSub)
+    + cell(pick('节奏','Cadence'), (g.last30 != null ? g.last30 : '—') + ' <span class="small">' + pick('近 30 天','last 30d') + '</span>',
+      (g.last90 != null ? g.last90 : '—') + ' ' + pick('近 90 天','last 90d'))
+    + cell(pick('测试轨迹','Test trail'), ((g.testCommits || []).length) + ' <span class="small">' + pick('次提交','commits') + '</span>',
+      pick('路径含 test / spec','paths matching test / spec'))
+    + '</div>'
+    + (top ? '<div style="margin-top:7px"><span class="data">' + top + '</span></div>' : '')
+    + (g.commits && g.commits[0] && g.commits[0].msg ? '<div class="small muted" style="margin-top:6px">'
+        + pick('最新提交','Latest commit') + '　<span class="data">' + escHtml(g.commits[0].msg.slice(0, 90)) + '</span></div>' : '')
+    + '</div>';
+}
+
+function versionTree(p) {
+  if (!p.versions.length) return '<section><h2>② ' + pick('版本图','Version graph') + '</h2><div class="empty">'
+    + pick('尚无版本','No versions yet') + '</div></section>';
+  const g = { lanes: p.graph?.lanes ?? [], nodes: (p.graph?.nodes ?? []).map(n => ({ ...n })), edges: p.graph?.edges ?? [] };
+  const svg = renderGraphSvg(g, { rowH: 34, laneW: 26, showLabels: false });
+  const st = graphStats(g);
+  const lanes = (g.lanes || []).map(l =>
+    '<span class="pill" style="background:' + l.color + '">' + escHtml(pick(l.id, null)) + '</span>').join(' ');
+  return '<section><h2>② ' + pick('版本图','Version graph')
+    + ' <span class="tag">' + pick('级差 = 分支；此处显示 SupV；◆ = 合并点，● = 配置冻结','grade = branch; SupV shown here; ◆ merge, ● frozen config') + '</span></h2>'
+    + '<div class="flex" style="align-items:flex-start;gap:22px">'
+    + '<div>'
+    + ((g.lanes && g.lanes.length)
+        ? '<div style="margin-bottom:6px;font-size:11px">'
+          + g.lanes.map((l) => '<span style="display:inline-block;min-width:' + (l.lane === undefined ? 22 : 22)
+              + 'px;text-align:center;color:' + l.color + ';font-weight:600">' + escHtml(pick(l.id, null)) + '</span>').join('')
+          + ' <span class="small muted">' + pick('（车道 / lanes）','(lanes)') + '</span></div>'
+        : '')
+    + svg + '</div>'
+    + '<div style="min-width:260px">'
+    + '<div class="small" style="margin-bottom:8px"><b>' + pick('分支（车道）','Branches (lanes)') + '</b><br>' + lanes + '</div>'
+    + '<table><tbody>'
+    + '<tr><td class="muted small">' + pick('版本数','Versions') + '</td><td>' + st.versions + '</td></tr>'
+    + '<tr><td class="muted small">' + pick('分支数','Branches') + '</td><td>' + st.branches + '</td></tr>'
+    + '<tr><td class="muted small">' + pick('合并点','Merge points') + '</td><td>' + st.merges + '</td></tr>'
+    + '<tr><td class="muted small">fitness ' + pick('区间','range') + '</td><td>'
+    + (st.minFitness == null ? '—' : fmt(st.minFitness) + ' – ' + fmt(st.maxFitness)) + '</td></tr>'
+    + '<tr><td class="muted small">' + pick('被门限压制','Gated') + '</td><td>' + st.gatedCount + '</td></tr>'
+    + '</tbody></table>'
+    + '<details style="margin-top:10px"><summary class="small muted">' + pick('节点明细','Node details') + '</summary>'
+    + '<table style="margin-top:6px"><thead><tr><th>' + pick('版本','Ver') + ' <span class="vax">SupV</span></th><th>' + pick('父','Parents')
+    + '</th><th>L·M</th><th>fitness</th></tr></thead><tbody>'
+    + (g.nodes || []).map(n => '<tr><td><span class="dot" style="background:' + n.color + '"></span><b>' + vt('supv', n.id)
+        + '</b>' + (n.isMerge ? ' ◆' : '') + (n.rollbackFrom ? ' <span class="rb">↩ ' + pick('回退','rollback') + '</span> ' + vt('supv', n.rollbackFrom) : '') + '</td>'
+        + '<td class="small muted">' + ((n.parents || []).length ? (n.parents || []).map((x) => vt('supv', x)).join(' ') : '—') + '</td>'
+        + '<td class="small">L' + escHtml(n.L ?? '?') + '·' + escHtml(pick(n.M ?? '?', null)) + '</td>'
+        + '<td>' + (n.fitness == null ? '—' : fmt(n.fitness)
+            + (n.cap != null ? ' <span class="pill" style="background:#7f1d1d">CAP ' + n.cap + '</span>' : '')) + '</td></tr>').join('')
+    + '</tbody></table></details>'
+    + '</div></div>'
+    + '<div class="legend"><span>' + pick('斜线 = 分叉/合并；双圈 = 被门限封顶；↩ = 回退节点（与记分卡的继承无关）','diagonal = branch/merge; double ring = gated; ↩ = rollback (unrelated to inheritance)') + '</span></div>'
+    + '</section>';
+}
+
+function axisMatrix(p) {
+  const m = p.matrix;
+  if (!m || !m.rows.length) return '';
+  const colBase = {};
+  for (let ci = 0; ci < m.cols.length; ci++) {
+    const vals = m.grid.map((row) => row[ci]).filter((c) => c && c.fitness != null && !c.gate).map((c) => c.fitness);
+    colBase[m.cols[ci]] = vals.length ? Math.max(...vals) : null;
+  }
+  const cell = (c, col) => {
+    if (!c) return '<td class="muted" style="text-align:center" title="' + attrT('尚未组建', 'not assembled') + '">·</td>';
+    if (c.fitness == null) {
+      return '<td style="text-align:center;color:#6b7280" title="' + attrT('已由统一版本号管理、未评分', 'managed, not scored') + '">' + pick('待测','pending')
+        + '<div class="small muted">' + vt('supv', c.supv || c.id) + '</div></td>';
+    }
+    const b = bandOf(c.fitness);
+    const bc = BAND[b] ? BAND[b][2] : '#6b7280';
+    const base = colBase[col];
+    const gap = base == null ? null : round2(c.fitness - base);
+    const top = base != null && gap === 0 && !c.gate;
+    const rel = base == null ? '' : (top ? '<span style="color:#15803d">' + pick('最优','best') + '</span>' : deltaStr(gap));
+    const gate = c.gate ? '<div><span class="pill" style="background:#7f1d1d">' + escHtml(c.gate) + '</span></div>' : '';
+    const tr = c.testResult
+      ? '<div class="small muted">' + escHtml(c.testResult.verdict || '')
+        + (c.testResult.failed != null ? pick('失败','fail') + c.testResult.failed : '')
+        + (c.testResult.items != null ? '/' + c.testResult.items : '') + '</div>'
+      : '';
+    return '<td style="text-align:center">'
+      + '<div style="font-weight:650;font-size:15px;color:' + bc + '">' + (BAND[b] ? pick(BAND[b][0], BAND[b][1]) : '—') + '</div>'
+      + '<div class="small" style="color:' + bc + ';font-variant-numeric:tabular-nums">' + fmt(c.fitness, 1)
+      + '　<span style="color:' + deltaColor(gap) + '">' + rel + '</span></div>'
+      + gate + tr
+      + '<div class="small muted" title="' + attrT('监理版本号（底层管理键）', 'managed key') + '">' + vt('supv', c.supv || c.id) + '</div>'
+      + '</td>';
+  };
+  return '<section><h2>③ ' + pick('版本矩阵','Version matrix')
+    + ' <span class="tag">' + pick('统一版本号管理 · 来源：CodeV 被测体 + TestV 测试集（各自版本控制）· 每次组建只允许一条来源前进','one managed test version · sources: CodeV + TestV (each version-controlled)') + '</span></h2>'
+    + '<div class="scrollx"><table><thead><tr><th>' + pick('被测物（CodeV）⧵ 测试集（TestV）','SUT (CodeV) ⧵ TESTSET (TestV)') + '</th>'
+    + m.cols.map((c) => '<th style="text-align:center">' + (testLabel(p, c) ? escHtml(testLabel(p, c)) : vt('testv', c))
+        + '<div class="small muted">' + vt('testv', c) + '</div></th>').join('')
+    + '<th class="small muted">' + pick('来源号','source no.') + '</th></tr></thead><tbody>'
+    + m.rows.map((r, i) => '<tr><th style="white-space:nowrap">' + vt('codev', r)
+        + (intentOnly(r, p.graph?.nodes) ? ' <span class="muted small">' + escHtml(intentOnly(r, p.graph?.nodes)) + '</span>' : '') + '</th>'
+        + m.grid[i].map((c, ci) => cell(c, m.cols[ci])).join('')
+        + '<td class="small muted" style="white-space:nowrap">' + vt('codev', r) + '</td></tr>').join('')
+    + '</tbody></table></div>'
+    + '<div class="legend"><span>· ' + pick('未纳管（测试集扩张后须重跑）','not enrolled (must re-run after test-set growth)')
+    + '</span><span>— ' + pick('已纳管未评分','enrolled, not scored') + '</span><span>' + pick('数字 = fitness','number = fitness')
+    + '</span><span>✓ ' + pick('已记录测试结果','result recorded') + '</span><span>! '
+    + pick('被门限压制','gated') + '</span></div>'
+    + guidePanel(p) + '</section>';
+}
+
+
+const SUB_ZH = { timing: '工期', cost: '预算', deliverables: '范围', goal: '目标', accept: '验收', risk: '风险', quality: '质量' };
+const SUB_EN = { timing: 'Schedule', cost: 'Budget', deliverables: 'Scope', goal: 'Goal', accept: 'Acceptance', risk: 'Risk', quality: 'Quality' };
+
+
+
+function testLabel(p, testv) {
+  const labs = p.testsetLabels || {};
+  const zh = labs[testv] ?? null;
+  const en = labs['en:' + testv] ?? null;
+  if (!zh) return null;
+  return pick(zh, en);
+}
+
+function labelOf(v) {
+  const raw = String(v ?? '');
+  const m = raw.match(/#([a-z]+)$/i);
+  if (m && SUB_ZH[m[1].toLowerCase()]) return pick(SUB_ZH[m[1].toLowerCase()], null);
+  const mm = raw.match(/^L(\\d)set#(.+)$/i);
+  if (mm) return mm[2];
+  return pick(raw, null);
+}
+
+
+
+
+function labelHtml(v) {
+  return escHtml(labelOf(v));
+}
+
+function laneIndex(vs, v) {
+  const lane = vs.filter((x) => (x.change?.M ?? null) === (v.change?.M ?? null));
+  return lane.findIndex((x) => x.id === v.id) + 1;
+}
+
+
+
+function intentOnly(ver, nodes) {
+  const t = intentOf(ver, nodes);
+  return t === String(ver) || t === vShort(ver) ? '' : t;
+}
+
+function intentOf(ver, nodes) {
+  const key = (x) => String(x ?? '');
+  const n = (nodes || []).find((x) => key(x.codev) === key(ver))
+    || (nodes || []).find((x) => key(x.testv) === key(ver))
+    || (nodes || []).find((x) => key(x.id) === key(ver));
+  const zh = String(n?.note || '').trim();
+  const en = String(n?.noteEn || '').trim();
+  if (LANG === 'en' ? en : zh) return LANG === 'en' ? en : zh;
+  if (zh || en) return pick(zh || en, en || null);
+  return String(ver);
+}
+
+
+function guidePanel(p) {
+  const g = p.guide;
+  if (!g || !g.coverage.enrolled) return '';
+  const heading = '<h2 style="font-size:13px;margin-bottom:8px">' + pick('同类比较（版本矩阵的决策出口）','Comparable cohorts (the decision exit of the version matrix)')
+    + ' <span class="tag">' + pick('只有单来源变化的格子才可比——跨列 / 跨行比都无意义','only cells differing on ONE source are comparable') + '</span></h2>';
+  const best = (x, kind) => {
+    if (!x) return '<span class="muted">—</span>';
+    const other = kind === 'problem' ? x.coords.sut : x.coords.test;
+    return '<b>' + vt(kind === 'problem' ? 'codev' : 'testv', other) + '</b> '
+      + '<span style="color:#15803d;font-weight:650">' + fmt(x.fitness) + '</span>';
+  };
+  const rows1 = g.bestPerProblem.map(x =>
+    '<tr><td>' + vt('testv', x.testVer) + ' ' + escHtml(testLabel(p, x.testVer) ?? pick(labelOf(x.testVer), null)) + '</td><td>' + x.comparable + '</td><td>' + best(x.best, 'problem') + '</td>'
+    + '<td>' + (x.gain == null ? '—' : '+' + fmt(x.gain)) + '</td>'
+    + '<td class="small muted">' + (x.gatedNote ? escHtml(x.gatedNote) : '') + '</td></tr>').join('');
+  const rows2 = g.bestPerMethod.map(x =>
+    '<tr><td>' + vt('codev', x.sutVer) + '</td><td>' + x.comparable + '</td><td>' + best(x.best, 'method') + '</td>'
+    + '<td>' + (x.spread == null ? '—' : fmt(x.spread)) + '</td>'
+    + '<td class="small muted">' + (x.worst ? pick('最差','worst') + escHtml(x.worst.coords.test) + ' ' + fmt(x.worst.fitness) : '') + '</td></tr>').join('');
+  const pend = g.pending.length
+    ? '<div class="small" style="margin-top:10px"><b>' + pick('待补测试','To fill in') + '</b>：'
+      + g.pending.slice(0, 12).map(x => '<code>' + escHtml(x.sutVer) + '×' + escHtml(x.testVer) + '</code> <span class="muted">'
+        + escHtml(pick(x.why, null)) + '</span>').join('　')
+      + (g.pending.length > 12 ? ' <span class="muted">… +' + (g.pending.length - 12) + '</span>' : '') + '</div>'
+    : '';
+  return '<div style="margin-top:16px">' + heading + '</div>'
+    + '<div class="grid" style="margin-top:4px">'
+    + '<div><h2 style="font-size:13px;margin-bottom:2px">' + pick('问题 1 · 同样问题下，哪种配置最好','Q1 · Best configuration for the same problem') + '</h2>'
+    + '<div class="small muted" style="margin-bottom:6px">' + pick('固定测试集版本（一列内可比）','fixed test-set version (comparable within a column)') + '</div>'
+    + '<table><thead><tr><th>' + pick('TestV（问题）','TestV (problem)') + '</th><th>' + pick('可比','n')
+    + '</th><th>' + pick('最优 CodeV','Best CodeV') + '</th><th>' + pick('领先','Lead') + '</th><th></th></tr></thead><tbody>'
+    + rows1 + '</tbody></table></div>'
+    + '<div><h2 style="font-size:13px;margin-bottom:2px">' + pick('问题 2 · 同样方法下，最佳使用场合','Q2 · Best-fit scenario for the same method') + '</h2>'
+    + '<div class="small muted" style="margin-bottom:6px">' + pick('固定被测物版本（一行内可比）','fixed SUT version (comparable within a row)') + '</div>'
+    + '<table><thead><tr><th>' + pick('CodeV（方法）','CodeV (method)') + '</th><th>' + pick('可比','n')
+    + '</th><th>' + pick('最佳场合','Best fit') + '</th><th>' + pick('跨度','Spread') + '</th><th></th></tr></thead><tbody>'
+    + rows2 + '</tbody></table></div></div>'
+    + pend
+    + '<div class="legend" style="margin-top:8px"><span>'
+    + pick('可比性铁律：只有单轴变化的两个格子才可比——跨列比 fitness 等于换了尺子','Comparability rule: only cells differing on ONE axis are comparable')
+    + '</span></div>';
+}
+
+function heatAndTrend(p) {
+  const vs = p.versions;
+  if (!vs.length) return '';
+  const head = vs.map(v => '<th>' + vt('supv', v.id) + '</th>').join('');
+  const cellHTML = (d, v) => {
+    const x = v.dimensions?.[d];
+    if (!x) return '<td class="muted">—</td>';
+    const v0 = x.value;
+    const col = v0 >= 75 ? '#16a34a' : v0 >= 60 ? '#ca8a04' : v0 >= 40 ? '#ea580c' : '#c62828';
+    const numStyle = x.inherited
+      ? 'color:#a1a1aa'
+      : 'color:#18181b;font-weight:600';
+    const barStyle = x.inherited ? 'opacity:.35' : '';
+    return '<td title="' + attrT(x.inherited ? '继承自父版本（未重算）' : '本次实测', x.inherited ? 'inherited, not recomputed' : 'measured in this version') + '">'
+      + '<div class="flex"><span style="min-width:38px;font-variant-numeric:tabular-nums;' + numStyle + '">' + fmt(v0, 1) + '</span>'
+      + '<span class="bar" style="flex:1;' + barStyle + '"><i style="width:' + Math.max(2, v0) + '%;background:' + col + '"></i></span></div></td>';
+  };
+  const allInherited = (d) => vs.length > 0 && vs.every(v => v.dimensions?.[d]?.inherited);
+  const rowsDims = DIMS.filter(d => !allInherited(d));
+  const collapsed = DIMS.filter(allInherited);
+  const body = rowsDims.map(d => '<tr><th>' + escHtml(pick(DIM_LABEL[d][0], DIM_LABEL[d][1])) + '</th>'
+    + vs.map(v => cellHTML(d, v)).join('') + '</tr>').join('');
+  const collapsedLine = collapsed.length
+    ? '<div class="small muted" style="margin-top:7px">'
+      + pick('以下维度在所有版本中都是【继承】的（这些层级没有重算它们），故不逐格重复：',
+             'Inherited in every version (no layer recomputed them), so not repeated per column:')
+      + ' ' + collapsed.map(d => {
+        const last = vs[vs.length - 1].dimensions?.[d];
+        return escHtml(pick(DIM_LABEL[d][0], DIM_LABEL[d][1])) + ' ' + fmt(last ? last.value : null, 1);
+      }).join(' · ')
+      + '</div>'
+    : '';
+  const trend = vs.map(v => {
+    const b = v.fitness ? bandOf(v.fitness.value) : null;
+    const col = b ? BAND[b][2] : '#6b7280';
+    return '<tr><td><b>' + vt('supv', v.id) + '</b></td>'
+      + '<td><span class="bar" style="width:200px"><i style="width:' + (v.fitness ? Math.max(2, v.fitness.value) : 0) + '%;background:' + col + '"></i></span></td>'
+      + '<td style="font-variant-numeric:tabular-nums;color:' + col + '">' + (v.fitness ? fmt(v.fitness.value) : '—') + '</td>'
+      + '<td class="small">' + (b ? pick(BAND[b][0], BAND[b][1]) : '—') + '</td>'
+      + '<td class="small muted">' + escHtml((v.createdAt||'').slice(0,19).replace('T',' ')) + '</td></tr>';
+  }).join('');
+  return '<section><h2>④ ' + pick('六维记分卡','Six-dimension scorecard')
+    + ' <span class="tag">' + pick('行 = 六维 · 列 = SupV · 条色 = 该维度所处档位 · 字色 = 本次实测 / 继承',
+        'rows = dimensions · columns = SupV · bar colour = band of that dimension · text colour = measured / inherited') + '</span></h2>'
+    + '<div class="small muted" style="margin-bottom:6px">'
+    + pick('四段含义（三类号共用同一规则）　哪一段进位 = 本次变更的层级：'
+      + 'L4「总」→ 第1段，L3「大」→ 第2段，L2「中」→ 第3段，L1「小」→ 第4段；进位后右侧各段清零。'
+      + '所以版本图上黄色「中」道（L2）的每一次前进，都记在第 3 段上。',
+           'Four segments (one rule for all three)　which segment carries = the change layer: '
+      + 'L4 → segment 1, L3 → segment 2, L2 → segment 3, L1 → segment 4; lower segments reset on carry. '
+      + 'So every L2 turn shows up in segment 3, matching the amber lane in the version graph.')
+    + '</div>'
+    + '<div class="scrollx"><table><thead><tr><th></th>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>'
+    + '<div class="legend"><span>' + pick('灰字 = 继承自父版本（未重算；该层级的重算集不含这一维）',
+        'grey = inherited from the parent version (not recomputed by this layer)') + '</span>'
+    + '<span>' + pick('彩色粗字 = 本版本实测','bold coloured = measured in this version') + '</span></div>'
+    + collapsedLine + '</section>'
+    + '<section><h2>⑤ fitness ' + pick('趋势','trend')
+    + ' <span class="tag">' + pick('横轴为配置序 Vn，非时间；时刻列于右侧','x-axis is config order Vn, not time') + '</span></h2>'
+    + '<table><thead><tr><th>' + pick('版本','Version') + '</th><th></th><th>fitness</th><th>' + pick('档位','Band') + '</th><th>' + pick('时刻','Timestamp') + '</th></tr></thead><tbody>' + trend + '</tbody></table></section>';
+}
+
+function changeList(p) {
+  const cl = p.changeLog || [];
+  const vs = p.versions || [];
+  const vrows = vs.filter(v => v.change?.note).map(v =>
+    '<tr><td><span class="vax">SupV</span><span class="pill" style="background:' + (M_COLOR[v.change?.M] || '#6b7280') + '">' + escHtml(vShort(v.id)) + ' L' + escHtml(v.change?.L) + ' ' + escHtml(pick(v.change?.M, null)) + '</span></td>'
+    + '<td class="small">' + escHtml(v.change?.A || '') + '</td><td>' + escHtml(pick(v.change?.note, v.change?.noteEn)) + '</td>'
+    + '<td class="small muted" style="white-space:nowrap">' + escHtml((v.createdAt||'').slice(0,10)) + '</td></tr>').join('');
+  const crows = cl.map(e => '<tr><td class="small muted" style="white-space:nowrap">' + escHtml((e.at||'').slice(0,10)) + '</td>'
+    + '<td>' + escHtml(pick(e.kind || '', e.kindEn)) + '</td>'
+    + '<td>' + escHtml(pick(e.text || e.reason || '', e.textEn || e.reasonEn)) + '</td></tr>').join('');
+  const vtable = vrows
+    ? '<table><thead><tr><th>' + pick('版本','Version') + '</th><th>' + pick('来源','Source') + '</th><th>'
+      + pick('变更内容','What changed') + '</th><th>' + pick('日期','Date') + '</th></tr></thead><tbody>' + vrows + '</tbody></table>'
+    : '';
+  const ctable = crows
+    ? '<h3>' + pick('项目要素变更（不动 Vn）','Project-element changes (no Vn)')
+      + ' <span class="tag">' + pick('走变更日志，不占版本号','logged, takes no version number') + '</span></h3>'
+      + '<table><thead><tr><th>' + pick('日期','Date') + '</th><th>' + pick('类别','Kind') + '</th><th>'
+      + pick('内容','Detail') + '</th></tr></thead><tbody>' + crows + '</tbody></table>'
+    : '';
+  return '<section><h2>⑥ ' + pick('变更列表','Change log')
+    + ' <span class="tag">' + pick('双账分离：被测体/测试集走 Vn，项目要素走变更日志','Two ledgers: SUT/test-set → Vn; project elements → change log') + '</span></h2>'
+    + (vtable || ctable ? vtable + ctable
+      : '<div class="empty">' + pick('暂无变更','No changes yet') + '</div>') + '</section>';
+}
+
+function deltaDetail(p) {
+  const vs = p.versions.filter(v => v.deltaVsParent);
+  const rows = vs.map(v => {
+    const d = v.deltaVsParent;
+    const cells = DIMS.map(dim => {
+      if (!(v.R || []).includes(dim)) return '<td class="muted small">' + pick('继承','inh.') + '</td>';
+      const x = d.dims?.[dim];
+      return '<td style="color:' + deltaColor(x) + ';font-variant-numeric:tabular-nums">' + deltaStr(x) + '</td>';
+    }).join('');
+    const to = d.tradeoff === 'trade-off' ? ['有意权衡','trade-off','#15803d']
+      : d.tradeoff === 'possible-mistake' ? ['疑似失误','possible mistake','#c62828']
+      : ['中性','neutral','#6b7280'];
+    const toHtml = pick(to[0], to[1]);
+    return '<tr><td><b>' + (v.parent ? vt('supv', v.parent) : '') + '<span class="muted">→</span>' + vt('supv', v.id) + '</b></td>' + cells
+      + '<td style="color:' + deltaColor(d.fitness) + ';font-variant-numeric:tabular-nums">' + deltaStr(d.fitness) + '</td>'
+      + '<td><span class="pill" style="background:' + to[2] + '">' + toHtml + '</span></td></tr>';
+  }).join('');
+  return '<section><h2>⑦ Δ ' + pick('详情','detail')
+    + ' <span class="tag">' + pick('只报重算集 R；继承维度不出现差值','Only R is reported; inherited dims show no delta') + '</span></h2>'
+    + (rows ? '<table><thead><tr><th></th>'
+        + DIMS.map(d => '<th>' + escHtml(pick(DIM_LABEL[d][0], DIM_LABEL[d][1])) + '</th>').join('')
+        + '<th>Δ fitness</th><th>' + pick('权衡','Trade-off') + '</th></tr></thead><tbody>' + rows + '</tbody></table>'
+      : '<div class="empty">' + pick('尚无 Δ（至少需要两个版本）','No deltas yet (need ≥2 versions)') + '</div>') + '</section>';
+}
+
+function evidenceView(p) {
+  const vs = p.versions;
+  const head = vs[vs.length-1];
+  if (!head) return '';
+  const rows = DIMS.map(d => {
+    const x = head.dimensions?.[d];
+    if (!x) return '';
+    const ev = (x.evidence || []).map(e => '<code>' + escHtml(e) + '</code>').join(' ');
+    const gp = (x.gaps || []).map((g) => {
+      const t = typeof g === 'string' ? g : (g?.text ?? '');
+      return '<div class="gap">' + escHtml(pick(t, typeof g === 'object' ? (g?.textEn ?? null) : null)) + '</div>';
+    }).join('');
+    return '<tr><td><b>' + escHtml(pick(DIM_LABEL[d][0], DIM_LABEL[d][1])) + '</b><br><span class="small muted">' + escHtml(DIM_LABEL[d][1]) + '</span></td>'
+      + '<td class="small">' + escHtml(x.basis || '—') + (x.inherited ? ' <span class="muted small">' + pick('继承自','inherited from') + ' ' + escHtml(x.inheritedFrom) + '</span>' : '') + '</td>'
+      + '<td style="font-variant-numeric:tabular-nums">' + fmt(x.confidence, 2) + '</td>'
+      + '<td class="small">' + (ev || '<span class="muted">—</span>') + '</td>'
+      + '<td>' + (gp || '<span class="muted small">—</span>') + '</td></tr>';
+  }).join('');
+  const stops = (p.stops || []).map(s => '<div class="stop"><b>' + escHtml(pick(s.kind, s.kindEn || null)) + '</b> <span class="small muted">'
+    + escHtml((s.at||'').slice(0,19).replace('T',' ')) + '</span><br><span class="small">'
+    + escHtml(pick(s.reason, s.reasonEn || null)) + '</span></div>').join('');
+  return '<section><h2>⑧ ' + pick('证据与缺口','Evidence & gaps')
+    + ' <span class="tag">' + pick('缺口只降置信度，不直接扣分（公理 2）','Gaps lower confidence, not score (axiom 2)') + '</span></h2>'
+    + '<table><thead><tr><th>' + pick('维度','Dimension') + '</th><th>' + pick('依据','Basis') + '</th><th>' + pick('置信','Conf.')
+    + '</th><th>' + pick('证据引用','Evidence') + '</th><th>' + pick('缺口','Gaps') + '</th></tr></thead><tbody>' + rows + '</tbody></table>'
+    + (stops ? '<h2 style="margin-top:16px">' + pick('停机记录','Stopped outputs') + ' <span class="tag">'
+        + pick('停发 Δ 是合规输出，不是失败','Stopping Δ is a compliant output, not a failure') + '</span></h2>' + stops : '')
+    + '</section>';
+}
+
+
+const ALL_PIDS = DATA.projects.map((p) => p.pid);
+const LS_KEY = 'psup.tabs.v1';
+
+function loadPref() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch (e) { return null; }
+}
+function savePref(st) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify({ open: st.open, active: st.active, known: st.known })); } catch (e) {}
+}
+let TABS = normalizeTabs(ALL_PIDS, loadPref());
+
+function projOf(pid) { return DATA.projects.filter((x) => x.pid === pid)[0] || null; }
+
+function projLabel(pid) {
+  const p = projOf(pid);
+  if (!p) return pid;
+  const en = (p.projectEn && p.projectEn.name) || p.project.nameEn || null;
+  return pick(p.project.name || pid, en);
+}
+
+function tabBarHTML(st) {
+  const tabs = st.open.map((pid) =>
+    '<div class="tab' + (pid === st.active ? ' on' : '') + '" data-tab="' + escHtml(pid) + '" title="' + escHtml(pid) + '">'
+    + '<span class="tabn">' + escHtml(projLabel(pid)) + '</span>'
+    + '<span class="tabx" data-close="' + escHtml(pid) + '" title="' + attrT('关闭该标签','Close this tab') + '">×</span>'
+    + '</div>').join('');
+  return '<nav class="tabs" id="tabs">' + tabs
+    + '<div class="tab add' + (st.active === ADD_TAB ? ' on' : '') + '" id="tabAdd" data-tab="' + ADD_TAB + '"'
+    + ' title="' + attrT('加入新工程','Add a project') + '"><span class="tabn">+</span></div>'
+    + '</nav>';
+}
+
+function emptyStateHTML() {
+  if (!DATA.projects.length) {
+    return '<section><div class="empty">' + pick('data/projects 下暂无项目','No projects under data/projects') + '</div></section>';
+  }
+  return '<section><div class="empty">'
+    + pick('所有项目标签都已关闭。点上面的 + 打开或新建工程。','All project tabs are closed. Click + above to reopen or create one.')
+    + '</div></section>';
+}
+
+function renderView() {
+  const lg = document.body.classList.contains('en') ? 'en' : 'zh';
+  LANG = lg;
+  const body = TABS.active === ADD_TAB ? addProjectPage()
+    : (TABS.active && PROJ_HTML[lg][TABS.active]) ? PROJ_HTML[lg][TABS.active]
+      : emptyStateHTML();
+  const app = document.getElementById('app');
+  app.innerHTML = tabBarHTML(TABS) + body;
+  bindTabs();
+  if (SERVE_MODE) bindServeAddPage();
+  else {
+    const btn = document.getElementById('pickDir');
+    if (btn) btn.onclick = onPickDir;
+    if (typeof bindServeHint === 'function') bindServeHint();
+  }
+}
+
+function bindTabs() {
+  const bar = document.getElementById('tabs');
+  for (const el of bar.querySelectorAll('[data-tab]')) {
+    el.onclick = () => { TABS = activate(TABS, el.getAttribute('data-tab')); savePref(TABS); renderView(); };
+  }
+  for (const el of bar.querySelectorAll('[data-close]')) {
+    el.onclick = (ev) => { ev.stopPropagation(); TABS = closeTab(TABS, el.getAttribute('data-close')); savePref(TABS); renderView(); };
+  }
+  for (const el of document.querySelectorAll('[data-open]')) {
+    el.onclick = () => { TABS = openTab(TABS, el.getAttribute('data-open')); savePref(TABS); renderView(); };
+  }
+}
+
+
+async function onPickDir() {
+  const out = document.getElementById('scanOut');
+  const setOut = (html) => { if (out) out.innerHTML = html; };
+  if (typeof window === 'undefined' || typeof window.showDirectoryPicker !== 'function') {
+    setOut('<div class="small" style="color:#b45309">'
+      + pick('此浏览器不支持目录选择。请用 Chrome / Edge，或改用本地服务模式。',
+             'This browser has no directory picker. Use Chrome / Edge, or the local server mode.') + '</div>');
+    return;
+  }
+  let handle;
+  try {
+    handle = await window.showDirectoryPicker({ mode: 'read' });
+  } catch (e) {
+    return;   // 用户取消，不报错
+  }
+  const inp = document.getElementById('dirPath');
+  if (inp) inp.value = handle.name;
+  setOut('<div class="small muted">' + pick('正在采集…','Scanning…') + '</div>');
+  try {
+    const r = await scanDirectory(handle);
+    setOut(scanReportHTML(r));
+  } catch (e) {
+    setOut('<div class="small" style="color:#b45309">' + escHtml(String(e && e.message || e)) + '</div>');
+  }
+}
+
+
+function projectBlock(p) {
+  const trimSlash = (x) => { let t = String(x || ''); while (t.length > 1 && t.endsWith('/')) t = t.slice(0, -1); return t; };
+  const sameAsDir = Boolean(p.statsDir && p.ws && trimSlash(p.statsDir) === trimSlash(p.ws));
+  const wsTag = (p.ws && !sameAsDir) ? '<span class="wstag" title="' + escHtml(p.ws) + '">'
+    + pick('记录在','records in') + ' <span class="data">' + escHtml(p.wsLabel || '') + '</span></span>' : '';
+  return '<div class="flex" style="margin-bottom:6px"><b style="font-size:15px">' + escHtml(p.pid) + '</b>'
+    + '<span class="muted small">' + escHtml(p.project.nameEn || '') + '</span>' + wsTag + '</div>'
+    + projectCard(p) + versionTree(p) + axisMatrix(p) + heatAndTrend(p) + changeList(p) + deltaDetail(p) + evidenceView(p);
+}
+const PROJ_HTML = { zh: {}, en: {} };
+for (const __lg of ['zh', 'en']) {
+  LANG = __lg;
+  for (const __p of DATA.projects) PROJ_HTML[__lg][__p.pid] = projectBlock(__p);
+}
+
+
+function renderAll(lang) {
+  LANG = lang;
+  const st = { open: ALL_PIDS.slice(), active: ALL_PIDS[0] || null, known: ALL_PIDS.slice() };
+  return tabBarHTML(st) + ALL_PIDS.map((pid) => PROJ_HTML[lang][pid]).join('');
+}
+const HTML_ZH = renderAll('zh');
+const HTML_EN = renderAll('en');
+globalThis.HTML_ZH = HTML_ZH;
+globalThis.HTML_EN = HTML_EN;
+globalThis.renderView = renderView;      // 供测试/自动化直接驱动
+globalThis.__tabs = () => TABS;          // 只读快照，便于断言
+globalThis.ADD_TAB = ADD_TAB;
+
+globalThis.__setActive = (x) => { TABS = activate(TABS, x); savePref(TABS); renderView(); };
+globalThis.__lang = () => LANG;          // 当前渲染语言（pick() 的依据），便于断言"栏与正文同语言"
+function applyLang() { renderView(); }
+applyLang();
+
+</script>
+</body>
+</html>

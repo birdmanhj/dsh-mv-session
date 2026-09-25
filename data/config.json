@@ -1,0 +1,8 @@
+{
+  "version": "2026-09-20",
+  "_comment": "权重表与门限是『口径』的一部分（SPEC §8 步骤 4）。权重一旦改动必须另立 rubric 版本，否则跨版本 Δ 不可比。",
+  "weights": { "cost": 1, "quality": 1, "schedule": 1, "goal": 1, "constraint": 1, "risk": 1 },
+  "gates": { "infeasibleCap": 25, "redLineCap": 40 },
+  "tolerance": { "riskExposure": 0.25, "drift": 0.40 },
+  "output": { "language": "zh-en", "decimals": 2 }
+}

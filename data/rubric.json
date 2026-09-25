@@ -1,0 +1,74 @@
+{
+  "version": "r2",
+  "standardWeights": {
+    "cost": 1,
+    "quality": 1,
+    "schedule": 1,
+    "goal": 1,
+    "constraint": 1,
+    "risk": 1
+  },
+  "_comment": "口径版本（rubric-version）。判法 / 权重 / L0 判定基准 / 计价表 四项任一变动即新立版本，新旧分数禁止直接相减（SPEC §10 原则 4）。",
+  "createdAt": "2026-09-20",
+  "anchors": [
+    {
+      "band": "90-100",
+      "verdict": "exemplary",
+      "zh": "优于预期，可作该维度标杆版本"
+    },
+    {
+      "band": "75-89",
+      "verdict": "pass",
+      "zh": "达预期，可直接放行"
+    },
+    {
+      "band": "60-74",
+      "verdict": "pass-with-conditions",
+      "zh": "有偏差但可控，需附缓解措施"
+    },
+    {
+      "band": "40-59",
+      "verdict": "intervene",
+      "zh": "需要干预：改方案、加资源或重定验收"
+    },
+    {
+      "band": "1-39",
+      "verdict": "regress-or-restart",
+      "zh": "严重偏离，建议回退或重新立项"
+    },
+    {
+      "band": "0 / capped",
+      "verdict": "capped",
+      "zh": "不可行或红线违反（fitness 被门限压制，非『分低』）"
+    }
+  ],
+  "gates": {
+    "infeasible": {
+      "cap": 25,
+      "zh": "任一考核点阈值物理上不可达 ⇒ 这条路不存在，须重配时间点"
+    },
+    "red-line": {
+      "cap": 40,
+      "zh": "红线约束/考核点已违反 ⇒ 必须业主裁决"
+    }
+  },
+  "basis": {
+    "objective": "脚本从证据直接算出（会话日志、产出物清单、时间戳）",
+    "structured": "按本 rubric 结构化判断，须附依据与证据引用"
+  },
+  "l0": {
+    "description": "判定基准（golden oracle）：什么算『对』。永不变，不属于任何版本。",
+    "pilotExample": "Agent-Loop 试点：一次执行被判定为『完成』= 交付物清单与任务要求逐项对上，且无红线约束违反"
+  },
+  "previousVersion": "r1",
+  "changeLog": [
+    {
+      "at": "2026-09-20",
+      "from": "r1",
+      "to": "r2",
+      "what": "quality 维改为以【验收测试通过率】为主判据：quality = 0.8×测试通过率 + 0.2×(1−错误率−重复率)；无测试结果时退化为过程代理并记缺口。",
+      "why": "r1 的 quality 只由运维指标合成，测试结果虽被 record 却从未参与评分 ⇒「用测试评估变化」为空话，TestV 前进不改变任何分数。",
+      "impact": "r1 与 r2 的分数【不可直接相减】（SPEC §10 原则 4）。历史版本沿用 r1 记分；r2 起须全量重算（R=六维）。"
+    }
+  ]
+}

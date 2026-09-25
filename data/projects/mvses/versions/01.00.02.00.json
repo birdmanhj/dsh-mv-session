@@ -1,0 +1,192 @@
+{
+  "id": "01.00.02.00",
+  "supv": "01.00.02.00",
+  "path": "V1.1.1",
+  "codev": "git:v0.1.2",
+  "testv": "testset:mvses-timing-v1",
+  "coords": {
+    "sut": "git:v0.1.2",
+    "test": "testset:mvses-timing-v1"
+  },
+  "sources": {
+    "code": {
+      "number": "git:v0.1.2",
+      "repo": ".",
+      "git": {
+        "repo": "/Users/huangjian/vibe-workshop/DSH-mv-session",
+        "head": "fd72e39b54d0d2bb7f96f0338b82669c5327bd56",
+        "branch": "main",
+        "dirty": true,
+        "describe": "v0.1.2",
+        "error": null
+      }
+    },
+    "test": {
+      "number": "testset:mvses-timing-v1",
+      "repo": ".",
+      "subsets": [],
+      "subsetsTouched": [],
+      "content": null,
+      "git": {
+        "repo": "/Users/huangjian/vibe-workshop/DSH-mv-session",
+        "head": "fd72e39b54d0d2bb7f96f0338b82669c5327bd56",
+        "branch": "main",
+        "dirty": true,
+        "describe": "v0.1.2",
+        "error": null
+      }
+    }
+  },
+  "git": {
+    "sut": {
+      "repo": "/Users/huangjian/vibe-workshop/DSH-mv-session",
+      "head": "fd72e39b54d0d2bb7f96f0338b82669c5327bd56",
+      "branch": "main",
+      "dirty": true,
+      "describe": "v0.1.2",
+      "error": null
+    },
+    "test": {
+      "repo": "/Users/huangjian/vibe-workshop/DSH-mv-session",
+      "head": "fd72e39b54d0d2bb7f96f0338b82669c5327bd56",
+      "branch": "main",
+      "dirty": true,
+      "describe": "v0.1.2",
+      "error": null
+    }
+  },
+  "backfilled": false,
+  "rubricFingerprint": {
+    "weights": {
+      "cost": 1,
+      "quality": 1,
+      "schedule": 1,
+      "goal": 1,
+      "constraint": 1,
+      "risk": 1
+    },
+    "l0": "判定基准（golden oracle）：什么算『对』。永不变，不属于任何版本。"
+  },
+  "axis": "test-side",
+  "branch": "中",
+  "parents": [
+    "01.00.01.00"
+  ],
+  "parent": "01.00.01.00",
+  "createdAt": "2026-09-25T04:51:16.203Z",
+  "frozenPair": {
+    "sut": {
+      "ref": "git:v0.1.2",
+      "changed": false
+    },
+    "test": {
+      "ref": "testset:mvses-timing-v1",
+      "changed": true
+    }
+  },
+  "change": {
+    "Lmodel": null,
+    "Lset": 2,
+    "anchor": {
+      "layer": "L1",
+      "frozenAt": "V2",
+      "source": "data/projects/mvses/versions/V2.json"
+    },
+    "checkpointsTouched": [],
+    "requestedBy": "owner",
+    "confirmed": true,
+    "A": "test-side",
+    "L": 2,
+    "M": "中"
+  },
+  "rubricVersion": "r2",
+  "pricingVersion": "2026-09",
+  "evidenceProbe": null,
+  "R": [
+    "quality",
+    "risk"
+  ],
+  "I": [
+    "cost",
+    "schedule",
+    "goal",
+    "constraint"
+  ],
+  "dimensions": {
+    "cost": {
+      "value": 90,
+      "confidence": 1,
+      "basis": "structured",
+      "evidence": [],
+      "gaps": [],
+      "inherited": true,
+      "inheritedFrom": "01.00.01.00"
+    },
+    "quality": {
+      "value": 95,
+      "confidence": 1,
+      "basis": "structured",
+      "evidence": [],
+      "gaps": []
+    },
+    "schedule": {
+      "value": 100,
+      "confidence": 1,
+      "basis": "structured",
+      "evidence": [],
+      "gaps": [],
+      "inherited": true,
+      "inheritedFrom": "01.00.01.00"
+    },
+    "goal": {
+      "value": 100,
+      "confidence": 1,
+      "basis": "structured",
+      "evidence": [],
+      "gaps": [],
+      "inherited": true,
+      "inheritedFrom": "01.00.01.00"
+    },
+    "constraint": {
+      "value": 100,
+      "confidence": 1,
+      "basis": "structured",
+      "evidence": [],
+      "gaps": [],
+      "inherited": true,
+      "inheritedFrom": "01.00.01.00"
+    },
+    "risk": {
+      "value": 80,
+      "confidence": 1,
+      "basis": "structured",
+      "evidence": [],
+      "gaps": []
+    }
+  },
+  "fitness": {
+    "value": 93.87,
+    "raw": 93.87,
+    "cap": null,
+    "gate": null,
+    "feasible": true,
+    "confidence": 1
+  },
+  "deltaVsParent": {
+    "fitness": 0.9,
+    "dims": {
+      "quality": 3,
+      "risk": 2
+    },
+    "tradeoff": "neutral",
+    "R": [
+      "quality",
+      "risk"
+    ]
+  },
+  "verdict": {
+    "band": "exemplary",
+    "tradeoff": "neutral",
+    "notes": ""
+  }
+}

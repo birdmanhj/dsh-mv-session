@@ -1,0 +1,191 @@
+{
+  "id": "01.00.00.00",
+  "supv": "01.00.00.00",
+  "path": "V0",
+  "parent": null,
+  "createdAt": "2026-09-25T04:51:10.268Z",
+  "frozenPair": {
+    "sut": {
+      "ref": "01.00.00.00",
+      "changed": true
+    },
+    "test": {
+      "ref": "00.01.00.00",
+      "changed": true
+    }
+  },
+  "coords": {
+    "sut": "01.00.00.00",
+    "test": "00.01.00.00"
+  },
+  "sources": {
+    "code": {
+      "number": "01.00.00.00",
+      "repo": ".",
+      "git": {
+        "repo": ".",
+        "head": "fd72e39b54d0d2bb7f96f0338b82669c5327bd56",
+        "branch": "main",
+        "dirty": true,
+        "describe": "v0.1.2",
+        "error": null
+      }
+    },
+    "test": {
+      "number": "00.01.00.00",
+      "repo": ".",
+      "git": {
+        "repo": ".",
+        "head": "fd72e39b54d0d2bb7f96f0338b82669c5327bd56",
+        "branch": "main",
+        "dirty": true,
+        "describe": "v0.1.2",
+        "error": null
+      }
+    }
+  },
+  "git": {
+    "sut": {
+      "repo": ".",
+      "head": "fd72e39b54d0d2bb7f96f0338b82669c5327bd56",
+      "branch": "main",
+      "dirty": true,
+      "describe": "v0.1.2",
+      "error": null
+    },
+    "test": {
+      "repo": ".",
+      "head": "fd72e39b54d0d2bb7f96f0338b82669c5327bd56",
+      "branch": "main",
+      "dirty": true,
+      "describe": "v0.1.2",
+      "error": null
+    }
+  },
+  "backfilled": false,
+  "change": {
+    "Lmodel": 4,
+    "Lset": 4,
+    "L": 4,
+    "M": "总",
+    "A": "model-side",
+    "anchor": {
+      "layer": "none",
+      "frozenAt": "V0",
+      "source": "baseline"
+    },
+    "checkpointsTouched": [],
+    "requestedBy": "owner",
+    "confirmed": true,
+    "note": "基线：场景确立（L4），R=全部六维，I=∅"
+  },
+  "R": [
+    "cost",
+    "quality",
+    "schedule",
+    "goal",
+    "constraint",
+    "risk"
+  ],
+  "I": [],
+  "dimensions": {
+    "cost": {
+      "value": 100,
+      "confidence": 0.7,
+      "basis": "objective",
+      "evidence": [
+        "session:session-23194196-d247-40e1-bdb9-aed7e272442d#usage"
+      ],
+      "gaps": [
+        "项目未设预算上限 ⇒ 成本维无判据，按满分占位"
+      ]
+    },
+    "quality": {
+      "value": 90.13,
+      "confidence": 0.6000000000000001,
+      "basis": "objective",
+      "evidence": [
+        "session:session-23194196-d247-40e1-bdb9-aed7e272442d#tool/result",
+        "errors=29/476",
+        "repeats=18/476"
+      ],
+      "gaps": [
+        "无独立验收判据（测试通过率或产出物逐项核验）；缺验收测试结果 ⇒ 质量维以过程指标代理",
+        "缺产出物清单 ⇒ 范围考核点未取证"
+      ]
+    },
+    "schedule": {
+      "value": 100,
+      "confidence": 0.7,
+      "basis": "objective",
+      "evidence": [
+        "session:session-23194196-d247-40e1-bdb9-aed7e272442d#timing"
+      ],
+      "gaps": [
+        "项目未设工期上限 ⇒ 进度维无判据，按满分占位"
+      ]
+    },
+    "goal": {
+      "value": 100,
+      "confidence": 0.7,
+      "basis": "structured",
+      "evidence": [
+        "project:mvses#goal"
+      ],
+      "gaps": [
+        "未提供目标漂移证据（无变更单对照）⇒ 目标维按未漂移占位"
+      ]
+    },
+    "constraint": {
+      "value": 100,
+      "confidence": 0.8,
+      "basis": "objective",
+      "evidence": [
+        "violations=none",
+        "redLines=none"
+      ],
+      "gaps": [
+        "项目未声明红线约束 ⇒ 约束维判据不足"
+      ]
+    },
+    "risk": {
+      "value": 40,
+      "confidence": 0.6,
+      "basis": "structured",
+      "evidence": [
+        "waitingRatio=1",
+        "riskExposure=1 (tolerance=0.25)",
+        "idleGaps=17",
+        "errors=29"
+      ],
+      "gaps": [
+        "以等待占比作风险代理指标；无独立风险台账（概率×影响）⇒ 本条置信度最低"
+      ]
+    }
+  },
+  "fitness": {
+    "value": 84.36,
+    "raw": 84.36,
+    "cap": null,
+    "gate": null,
+    "feasible": true,
+    "confidence": 0.6
+  },
+  "deltaVsParent": null,
+  "verdict": {
+    "band": "pass",
+    "tradeoff": null,
+    "notes": "基线快照"
+  },
+  "evidence": {
+    "session": "session-23194196-d247-40e1-bdb9-aed7e272442d",
+    "steps": 469,
+    "toolCalls": 476,
+    "toolErrors": 29,
+    "repeats": 18,
+    "cost": 59.614207,
+    "currency": "CNY",
+    "pricingVersion": "2026-09",
+    "minutes": 45887.59
+  }
+}

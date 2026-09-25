@@ -1,0 +1,212 @@
+{
+  "id": "01.00.00.01",
+  "supv": "01.00.00.01",
+  "path": "V1",
+  "codev": "git:v0.1.1",
+  "testv": "testset:mvses-v1",
+  "coords": {
+    "sut": "git:v0.1.1",
+    "test": "testset:mvses-v1"
+  },
+  "sources": {
+    "code": {
+      "number": "git:v0.1.1",
+      "repo": ".",
+      "git": {
+        "repo": "/Users/huangjian/vibe-workshop/DSH-mv-session",
+        "head": "fd72e39b54d0d2bb7f96f0338b82669c5327bd56",
+        "branch": "main",
+        "dirty": true,
+        "describe": "v0.1.2",
+        "error": null
+      }
+    },
+    "test": {
+      "number": "testset:mvses-v1",
+      "repo": ".",
+      "subsets": [],
+      "subsetsTouched": [],
+      "content": null,
+      "git": {
+        "repo": "/Users/huangjian/vibe-workshop/DSH-mv-session",
+        "head": "fd72e39b54d0d2bb7f96f0338b82669c5327bd56",
+        "branch": "main",
+        "dirty": true,
+        "describe": "v0.1.2",
+        "error": null
+      }
+    }
+  },
+  "git": {
+    "sut": {
+      "repo": "/Users/huangjian/vibe-workshop/DSH-mv-session",
+      "head": "fd72e39b54d0d2bb7f96f0338b82669c5327bd56",
+      "branch": "main",
+      "dirty": true,
+      "describe": "v0.1.2",
+      "error": null
+    },
+    "test": {
+      "repo": "/Users/huangjian/vibe-workshop/DSH-mv-session",
+      "head": "fd72e39b54d0d2bb7f96f0338b82669c5327bd56",
+      "branch": "main",
+      "dirty": true,
+      "describe": "v0.1.2",
+      "error": null
+    }
+  },
+  "backfilled": false,
+  "rubricFingerprint": {
+    "weights": {
+      "cost": 1,
+      "quality": 1,
+      "schedule": 1,
+      "goal": 1,
+      "constraint": 1,
+      "risk": 1
+    },
+    "l0": "判定基准（golden oracle）：什么算『对』。永不变，不属于任何版本。"
+  },
+  "axis": "model-side",
+  "branch": "小",
+  "parents": [
+    "01.00.00.00"
+  ],
+  "parent": "01.00.00.00",
+  "createdAt": "2026-09-25T04:51:15.282Z",
+  "frozenPair": {
+    "sut": {
+      "ref": "git:v0.1.1",
+      "changed": true
+    },
+    "test": {
+      "ref": "testset:mvses-v1",
+      "changed": false
+    }
+  },
+  "change": {
+    "Lmodel": 1,
+    "Lset": null,
+    "anchor": {
+      "layer": "L4",
+      "frozenAt": "V0",
+      "source": "data/projects/mvses/versions/V0.json"
+    },
+    "checkpointsTouched": [],
+    "requestedBy": "owner",
+    "confirmed": true,
+    "A": "model-side",
+    "L": 1,
+    "M": "小"
+  },
+  "rubricVersion": "r2",
+  "pricingVersion": "2026-09",
+  "evidenceProbe": null,
+  "R": [
+    "schedule",
+    "risk"
+  ],
+  "I": [
+    "cost",
+    "quality",
+    "goal",
+    "constraint"
+  ],
+  "dimensions": {
+    "cost": {
+      "value": 100,
+      "confidence": 0.7,
+      "basis": "objective",
+      "evidence": [
+        "session:session-23194196-d247-40e1-bdb9-aed7e272442d#usage"
+      ],
+      "gaps": [
+        "项目未设预算上限 ⇒ 成本维无判据，按满分占位"
+      ],
+      "inherited": true,
+      "inheritedFrom": "01.00.00.00"
+    },
+    "quality": {
+      "value": 90.13,
+      "confidence": 0.6000000000000001,
+      "basis": "objective",
+      "evidence": [
+        "session:session-23194196-d247-40e1-bdb9-aed7e272442d#tool/result",
+        "errors=29/476",
+        "repeats=18/476"
+      ],
+      "gaps": [
+        "无独立验收判据（测试通过率或产出物逐项核验）；缺验收测试结果 ⇒ 质量维以过程指标代理",
+        "缺产出物清单 ⇒ 范围考核点未取证"
+      ],
+      "inherited": true,
+      "inheritedFrom": "01.00.00.00"
+    },
+    "schedule": {
+      "value": 100,
+      "confidence": 1,
+      "basis": "structured",
+      "evidence": [],
+      "gaps": []
+    },
+    "goal": {
+      "value": 100,
+      "confidence": 0.7,
+      "basis": "structured",
+      "evidence": [
+        "project:mvses#goal"
+      ],
+      "gaps": [
+        "未提供目标漂移证据（无变更单对照）⇒ 目标维按未漂移占位"
+      ],
+      "inherited": true,
+      "inheritedFrom": "01.00.00.00"
+    },
+    "constraint": {
+      "value": 100,
+      "confidence": 0.8,
+      "basis": "objective",
+      "evidence": [
+        "violations=none",
+        "redLines=none"
+      ],
+      "gaps": [
+        "项目未声明红线约束 ⇒ 约束维判据不足"
+      ],
+      "inherited": true,
+      "inheritedFrom": "01.00.00.00"
+    },
+    "risk": {
+      "value": 72,
+      "confidence": 1,
+      "basis": "structured",
+      "evidence": [],
+      "gaps": []
+    }
+  },
+  "fitness": {
+    "value": 93.05,
+    "raw": 93.05,
+    "cap": null,
+    "gate": null,
+    "feasible": true,
+    "confidence": 0.6
+  },
+  "deltaVsParent": {
+    "fitness": 8.69,
+    "dims": {
+      "schedule": 0,
+      "risk": 32
+    },
+    "tradeoff": "neutral",
+    "R": [
+      "schedule",
+      "risk"
+    ]
+  },
+  "verdict": {
+    "band": "exemplary",
+    "tradeoff": "neutral",
+    "notes": ""
+  }
+}

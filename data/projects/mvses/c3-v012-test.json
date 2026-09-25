@@ -1,0 +1,9 @@
+{
+  "change": { "Lmodel": null, "Lset": 2,
+    "anchor": { "layer": "L1", "frozenAt": "V2", "source": "data/projects/mvses/versions/V2.json" },
+    "checkpointsTouched": [], "requestedBy": "owner", "confirmed": true },
+  "frozenPair": { "sut": { "ref": "git:v0.1.2" }, "test": { "ref": "testset:mvses-timing-v1" } },
+  "testSetAdditions": 14,
+  "note": "测试集侧 L2set：新增时序回归子集 migrate_projcache_timing（14 项断言：活进程写回→verify 失败→fix 对齐→45000 帧冷读冒烟→守卫/幂等）",
+  "dimensions": { "quality": { "base": 95, "basis": "structured" }, "risk": { "base": 80, "basis": "structured" } }
+}
